@@ -9,14 +9,16 @@ import {
     User,
     LogOut
 } from 'lucide-react';
+import Logo from '../ui/Logo';
 
 const PatientSidebar = () => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
         if (window.confirm('Are you sure you want to logout?')) {
-            localStorage.removeItem('patientToken');
-            localStorage.removeItem('patientUser');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('role');
             navigate('/login');
         }
     };
@@ -32,9 +34,8 @@ const PatientSidebar = () => {
 
     return (
         <aside className="w-64 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 overflow-y-auto z-[100] hidden md:block">
-            <div className="p-6 border-b border-slate-100">
-                <h2 className="text-2xl font-bold text-gradient">HealthCare+</h2>
-                <p className="text-xs text-slate-500 mt-1">Patient Portal</p>
+            <div className="p-6 border-b border-slate-100 flex items-center justify-center">
+                <Logo className="w-8 h-8" textClassName="text-xl" />
             </div>
 
             <nav className="p-4 space-y-1">

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Lock, Activity } from 'lucide-react';
+import { User, Lock } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import Logo from '../components/ui/Logo';
+import Footer from '../components/layout/Footer';
 import { patientService } from '../services/patientService';
 import toast from 'react-hot-toast';
 
@@ -37,13 +39,13 @@ const PatientLogin = () => {
     };
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen flex flex-col">
             <Header />
-            <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[80vh]">
+            <div className="container mx-auto px-4 py-12 flex items-center justify-center flex-grow">
                 <Card className="max-w-md w-full animate-scale-in">
                     <div className="text-center mb-8">
-                        <div className="inline-block p-4 bg-brand-600 rounded-2xl mb-4 shadow-lg shadow-brand-500/20">
-                            <Activity className="w-12 h-12 text-white" />
+                        <div className="flex justify-center mb-6">
+                            <Logo className="w-16 h-16" textClassName="text-4xl" />
                         </div>
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Patient Login</h1>
                         <p className="text-gray-600">Access your medical records and appointments</p>
@@ -102,6 +104,7 @@ const PatientLogin = () => {
                     </div>
                 </Card>
             </div>
+            <Footer />
         </div>
     );
 };

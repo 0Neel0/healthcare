@@ -1,10 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Calendar, UserPlus, Shield, CheckCircle, Clock, TrendingUp } from 'lucide-react';
+import { Calendar, UserPlus, Shield, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
 import Header from '../components/layout/Header';
+import Logo from '../components/ui/Logo';
+
+import Footer from '../components/layout/Footer';
 
 const Home = () => {
+    const isLoggedIn = !!localStorage.getItem('token');
+
     const features = [
         {
             icon: UserPlus,
@@ -19,7 +25,7 @@ const Home = () => {
             icon: Calendar,
             title: 'Book Appointment',
             description: 'Schedule your appointment with our expert physicians',
-            link: '/book-appointment',
+            link: isLoggedIn ? '/book-appointment' : '/login',
             color: 'text-accent-600',
             bg: 'bg-accent-50',
             border: 'border-accent-100',
@@ -28,7 +34,7 @@ const Home = () => {
             icon: Shield,
             title: 'Admin Portal',
             description: 'Manage appointments and patient records securely',
-            link: '/admin',
+            link: isLoggedIn ? '/admin' : '/login', // Unified login handles admin too
             color: 'text-slate-600',
             bg: 'bg-slate-100',
             border: 'border-slate-200',
@@ -48,8 +54,8 @@ const Home = () => {
             {/* Hero Section */}
             <section className="container mx-auto px-4 py-16">
                 <div className="text-center max-w-4xl mx-auto mb-16 animate-fade-in">
-                    <div className="inline-block p-4 bg-gradient-medical rounded-2xl mb-6 shadow-lg shadow-brand-500/20">
-                        <Activity className="w-12 h-12 text-white" />
+                    <div className="flex justify-center mb-6">
+                        <Logo className="w-20 h-20" textClassName="text-5xl" />
                     </div>
                     <h1 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
                         <span className="text-gradient">Healthcare Management</span>
@@ -121,6 +127,8 @@ const Home = () => {
                     </Link>
                 </div>
             </section>
+
+            <Footer />
         </div>
     );
 };

@@ -1,11 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, FileText, Activity, Clock, Plus, ChevronRight, User, CreditCard } from 'lucide-react';
 import Card from '../../components/ui/Card';
 
 const PatientDashboard = () => {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('patientUser') || '{}');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    // Redirect to profile completion if needed
+    useEffect(() => {
+        // If address is TBD or missing, assume profile is incomplete
+        if (user && (user.address === 'TBD' || !user.address)) {
+            navigate('/patient/complete-profile');
+        }
+    }, [user, navigate]);
 
     // Get Greeting based on time
     const hour = new Date().getHours();

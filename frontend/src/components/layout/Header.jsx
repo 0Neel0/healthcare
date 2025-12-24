@@ -1,16 +1,18 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Hospital, User, Calendar, Shield, LogOut, LogIn, LayoutDashboard } from 'lucide-react';
+import { User, Calendar, Shield, LogOut, LogIn, LayoutDashboard } from 'lucide-react';
+import Logo from '../ui/Logo';
 
 const Header = () => {
     const navigate = useNavigate();
-    const isLoggedIn = !!localStorage.getItem('patientToken');
-    const user = JSON.parse(localStorage.getItem('patientUser') || '{}');
+    const isLoggedIn = !!localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     const handleLogout = () => {
         if (window.confirm('Are you sure you want to logout?')) {
-            localStorage.removeItem('patientToken');
-            localStorage.removeItem('patientUser');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('role');
             navigate('/login');
         }
     };
@@ -19,11 +21,8 @@ const Header = () => {
         <header className="glass-effect sticky top-0 z-50 animate-slide-down">
             <div className="container mx-auto px-4 py-4">
                 <nav className="flex items-center justify-between">
-                    <Link to="/" className="flex items-center space-x-2 group">
-                        <div className="p-2 bg-gradient-medical rounded-xl shadow-lg shadow-brand-500/20 group-hover:shadow-glow transition-all duration-300">
-                            <Hospital className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-2xl font-bold text-gradient">HealthCare+</span>
+                    <Link to="/" className="flex items-center gap-2 group decoration-transparent">
+                        <Logo className="w-10 h-10" textClassName="text-2xl" />
                     </Link>
 
                     <div className="hidden md:flex items-center space-x-6">

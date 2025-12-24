@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import Logo from '../components/ui/Logo';
+import Footer from '../components/layout/Footer';
 
 const AdminLogin = () => {
     const navigate = useNavigate();
@@ -31,15 +33,15 @@ const AdminLogin = () => {
     };
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen flex flex-col">
             <Header />
 
-            <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[80vh]">
+            <div className="container mx-auto px-4 py-12 flex items-center justify-center flex-grow">
                 <Card className="max-w-md w-full animate-scale-in">
                     {/* Header */}
                     <div className="text-center mb-8">
-                        <div className="inline-block p-4 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl mb-4">
-                            <Shield className="w-12 h-12 text-white" />
+                        <div className="flex justify-center mb-6">
+                            <Logo className="w-14 h-14" textClassName="text-3xl" />
                         </div>
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Access</h1>
                         <p className="text-gray-600">Enter your passkey to continue</p>
@@ -87,6 +89,7 @@ const AdminLogin = () => {
                     </div>
                 </Card>
             </div>
+            <Footer />
         </div>
     );
 };

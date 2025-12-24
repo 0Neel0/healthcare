@@ -13,6 +13,7 @@ import {
     BarChart3,
     LogOut
 } from 'lucide-react';
+import Logo from '../ui/Logo';
 
 const Sidebar = () => {
     const navigate = useNavigate();
@@ -40,9 +41,9 @@ const Sidebar = () => {
 
     return (
         <aside className="w-64 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 overflow-y-auto z-50 hidden lg:block">
-            <div className="p-6 border-b border-slate-100">
-                <h2 className="text-2xl font-bold text-gradient">HealthCare+</h2>
-                <p className="text-xs text-slate-500 mt-1">Admin Portal</p>
+            <div className="p-6 border-b border-slate-100 flex flex-col items-center">
+                <Logo className="w-10 h-10" textClassName="text-2xl" />
+                <p className="text-xs text-slate-500 mt-2 font-medium tracking-wider uppercase">Admin Portal</p>
             </div>
 
             <nav className="p-4 space-y-1">

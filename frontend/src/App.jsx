@@ -1,10 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
-import PatientRegistration from './pages/PatientRegistration';
+import Register from './pages/Register';
+import Login from './pages/Login';
 import AppointmentBooking from './pages/AppointmentBooking';
 import AppointmentSuccess from './pages/AppointmentSuccess';
-import AdminLogin from './pages/AdminLogin';
 import DashboardLayout from './components/layout/DashboardLayout';
 import AdminDashboard from './pages/AdminDashboard'; // Overview
 import Inventory from './pages/admin/Inventory';
@@ -18,8 +18,6 @@ import Patients from './pages/admin/Patients';
 import Doctors from './pages/admin/Doctors';
 import Appointments from './pages/admin/Appointments';
 
-import PatientLogin from './pages/PatientLogin';
-
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 import PatientLayout from './components/layout/PatientLayout';
@@ -29,6 +27,8 @@ import MyMedicalRecords from './pages/patient/MyMedicalRecords';
 import MyLabReports from './pages/patient/MyLabReports';
 import MyBilling from './pages/patient/MyBilling';
 import MyProfile from './pages/patient/MyProfile';
+// Placeholder for Profile Completion - I will need to create this file next
+import PatientProfileCompletion from './pages/patient/PatientProfileCompletion';
 
 import { Toaster } from 'react-hot-toast';
 
@@ -38,8 +38,8 @@ function App() {
       <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<PatientLogin />} /> {/* Main User Login */}
-        <Route path="/register" element={<PatientRegistration />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         {/* Protected User Routes */}
         <Route path="/book-appointment" element={
@@ -53,7 +53,7 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* Patient Portal (New) */}
+        {/* Patient Portal */}
         <Route path="/patient" element={
           <ProtectedRoute>
             <PatientLayout />
@@ -61,6 +61,7 @@ function App() {
         }>
           <Route index element={<Navigate to="/patient/dashboard" replace />} />
           <Route path="dashboard" element={<PatientDashboard />} />
+          <Route path="complete-profile" element={<PatientProfileCompletion />} />
           <Route path="appointments" element={<MyAppointments />} />
           <Route path="emr" element={<MyMedicalRecords />} />
           <Route path="lab" element={<MyLabReports />} />
@@ -69,8 +70,6 @@ function App() {
         </Route>
 
         {/* Admin Routes */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-
         <Route path="/admin" element={<DashboardLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="patients" element={<Patients />} />

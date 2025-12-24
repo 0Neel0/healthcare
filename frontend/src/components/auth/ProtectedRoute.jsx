@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }) => {
     const location = useLocation();
-    const token = localStorage.getItem('patientToken');
+    const token = localStorage.getItem('token');
 
     if (!token) {
         // Redirect to login page but save the attempted url

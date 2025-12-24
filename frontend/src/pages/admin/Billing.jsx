@@ -18,10 +18,6 @@ const Billing = () => {
         services: [{ name: 'Consultation Fee', cost: 500, quantity: 1 }]
     });
 
-    useEffect(() => {
-        loadInvoices();
-    }, []);
-
     const loadInvoices = async () => {
         setLoading(true);
         try {
@@ -30,6 +26,11 @@ const Billing = () => {
         } catch (e) { console.error(e); }
         setLoading(false);
     };
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadInvoices();
+    }, []);
 
     const handleCreateInvoice = async (e) => {
         e.preventDefault();

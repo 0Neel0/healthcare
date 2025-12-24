@@ -1,23 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { UserPlus, CheckCircle2, ArrowLeft, ArrowRight } from 'lucide-react';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
+import Button from '../../components/ui/Button';
+import FormField from '../../components/forms/FormField';
+import patientService from '../../services/patientService';
 
-import Header from '../components/layout/Header';
-import Button from '../components/ui/Button';
-import FormField from '../components/forms/FormField';
-import Footer from '../components/layout/Footer';
-import patientService from '../services/patientService';
-
-const PatientRegistration = () => {
+const PatientProfileCompletion = () => {
     const navigate = useNavigate();
-    const { register, handleSubmit, formState: { errors } } = useForm();
+    const { register, handleSubmit, formState: { errors }, setValue } = useForm();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
     const totalSteps = 4;
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        if (storedUser) {
+            setUser(storedUser);
+            // Pre-fill fields if we have them
+            setValue('name', storedUser.name);
+            setValue('email', storedUser.email);
+            setValue('phone', storedUser.phone);
+        }
+    }, [setValue]);
 
     const onSubmit = async (data) => {
         try {
@@ -32,26 +43,17 @@ const PatientRegistration = () => {
                 privacyConsent: true,
             };
 
-            await patientService.createPatient(patientData);
+            // Call update instead of create
+            await patientService.registerPatient(user._id, patientData); // Assuming registerPatient is the update-full-profile endpoint
 
-            // Auto-login after registration
-            try {
-                const loginRes = await patientService.login({
-                    email: data.email,
-                    password: data.password
-                });
-                localStorage.setItem('token', loginRes.token);
-                localStorage.setItem('user', JSON.stringify(loginRes.patient));
+            // Update local storage
+            const updatedUser = { ...user, ...patientData };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
 
-                toast.success('Registration successful! Redirecting to booking...');
-                navigate('/book-appointment');
-            } catch (loginError) {
-                console.error("Auto-login failed", loginError);
-                toast.success('Registration successful! Please login.');
-                navigate('/login');
-            }
+            toast.success('Profile completed successfully!');
+            navigate('/patient/dashboard');
         } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Failed to register. Please try again.';
+            const errorMessage = err.response?.data?.message || 'Failed to update profile. Please try again.';
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {
@@ -76,10 +78,10 @@ const PatientRegistration = () => {
             case 1:
                 return (
                     <div className="space-y-4">
-                        <h2 className="text-2xl font-bold text-gradient mb-6">Personal Information</h2>
+                        <h2 className="text-2xl font-bold text-gradient mb-6">Personal details</h2>
+                        {/* Name/Email/Phone pre-filled but editable or locked? Let's keep editable but required */}
                         <FormField label="Full Name" name="name" register={register} error={errors.name} required />
-                        <FormField label="Email" name="email" type="email" register={register} error={errors.email} required />
-                        <FormField label="Password" name="password" type="password" register={register} error={errors.password} required />
+                        <FormField label="Email" name="email" type="email" register={register} error={errors.email} disabled />
                         <FormField label="Phone" name="phone" type="tel" register={register} error={errors.phone} required />
                         <FormField label="Date of Birth" name="birthDate" type="date" register={register} error={errors.birthDate} required />
                         <FormField
@@ -149,8 +151,8 @@ const PatientRegistration = () => {
                         <div className="inline-block p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mb-4">
                             <UserPlus className="w-10 h-10 text-white" />
                         </div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Patient Registration</h1>
-                        <p className="text-gray-600">Complete your profile to book appointments</p>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Profile</h1>
+                        <p className="text-gray-600">Please provide your medical details to continue</p>
                     </div>
 
                     {/* Progress Bar */}
@@ -221,7 +223,7 @@ const PatientRegistration = () => {
                                     disabled={loading}
                                     className="flex items-center space-x-2"
                                 >
-                                    <span>{loading ? 'Submitting...' : 'Complete Registration'}</span>
+                                    <span>{loading ? 'Submitting...' : 'Complete Profile'}</span>
                                     <CheckCircle2 className="w-5 h-5" />
                                 </Button>
                             )}
@@ -234,4 +236,4 @@ const PatientRegistration = () => {
     );
 };
 
-export default PatientRegistration;
+export default PatientProfileCompletion;

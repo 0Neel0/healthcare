@@ -11,10 +11,6 @@ const MyAppointments = () => {
     // Since we don't have a backend filter *yet*, I'll fetch all and filter client-side.
     // In production, this should be server-side filtering.
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = async () => {
         setLoading(true);
         try {
@@ -37,6 +33,11 @@ const MyAppointments = () => {
         }
         setLoading(false);
     };
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadData();
+    }, []);
 
     const handleCancel = async (id) => {
         if (window.confirm('Cancel this appointment?')) {

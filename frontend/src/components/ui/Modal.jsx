@@ -6,6 +6,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
 
     useEffect(() => {
         if (isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setShow(true);
         } else {
             const timer = setTimeout(() => setShow(false), 300);
