@@ -1,13 +1,19 @@
 import express from "express";
 import appointmentController from "../controllers/appointment.controller.js";
-import auth from "../middleware/auth.middleware.js";
+import { verifyAdminPasskey } from "../middleware/adminPasskey.middleware.js";
 
-const appointmentRoutes = express.Router();
+const router = express.Router();
 
-appointmentRoutes.post("/", auth, appointmentController.createAppointment);
-appointmentRoutes.get("/", auth, appointmentController.getAppointments);
-appointmentRoutes.get("/:id", auth, appointmentController.getAppointment);
-appointmentRoutes.put("/:id", auth, appointmentController.updateAppointment);
-appointmentRoutes.delete("/:id", auth, appointmentController.deleteAppointment);
+// Public routes
+router.post('/create', appointmentController.createAppointment);
+router.get('/:id', appointmentController.getAppointment);
 
-export default appointmentRoutes;
+// Admin routes (protected by passkey)
+router.get('/', verifyAdminPasskey, appointmentController.getAppointments);
+router.get('/admin/stats', verifyAdminPasskey, appointmentController.getAppointmentStats);
+router.patch('/:id/schedule', verifyAdminPasskey, appointmentController.scheduleAppointment);
+router.patch('/:id/cancel', verifyAdminPasskey, appointmentController.cancelAppointment);
+router.put('/:id', verifyAdminPasskey, appointmentController.updateAppointment);
+router.delete('/:id', verifyAdminPasskey, appointmentController.deleteAppointment);
+
+export default router;

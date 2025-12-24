@@ -1,13 +1,18 @@
 import express from "express";
 import patientController from "../controllers/patient.controller.js";
-import auth from "../middleware/auth.middleware.js";
 
-const patientRoutes = express.Router();
+const router = express.Router();
 
-patientRoutes.post("/", auth, patientController.createPatient);
-patientRoutes.get("/", auth, patientController.getPatients);
-patientRoutes.get("/:id", auth, patientController.getPatient);
-patientRoutes.put("/:id", auth, patientController.updatePatient);
-patientRoutes.delete("/:id", auth, patientController.deletePatient);
+// Public routes (no auth required for initial sign-up)
+router.post('/', patientController.createPatient);
+router.post('/login', patientController.loginPatient);
+router.get('/email', patientController.getPatientByEmail);
 
-export default patientRoutes;
+// Patient management routes
+router.get('/', patientController.getPatients);
+router.get('/:id', patientController.getPatient);
+router.put('/:id', patientController.updatePatient);
+router.put('/:id/register', patientController.registerPatient);
+router.delete('/:id', patientController.deletePatient);
+
+export default router;

@@ -1,0 +1,80 @@
+import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import {
+    LayoutDashboard,
+    Users,
+    Calendar,
+    Package,
+    CreditCard,
+    FileText,
+    Activity,
+    BedDouble,
+    UserCog,
+    BarChart3,
+    LogOut
+} from 'lucide-react';
+
+const Sidebar = () => {
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        if (window.confirm('Logout of Admin Portal?')) {
+            localStorage.removeItem('adminPasskey');
+            navigate('/admin/login');
+        }
+    };
+
+    const menuItems = [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+        { icon: Calendar, label: 'Appointments', path: '/admin/appointments' },
+        { icon: Users, label: 'Patients', path: '/admin/patients' },
+        { icon: UserCog, label: 'Doctors', path: '/admin/doctors' },
+        { icon: Package, label: 'Inventory', path: '/admin/inventory' },
+        { icon: CreditCard, label: 'Billing', path: '/admin/billing' },
+        { icon: FileText, label: 'EMR / Clinical', path: '/admin/emr' },
+        { icon: Activity, label: 'Laboratory', path: '/admin/lab' },
+        { icon: BedDouble, label: 'Wards', path: '/admin/wards' },
+        { icon: Users, label: 'Staff', path: '/admin/staff' },
+        { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
+    ];
+
+    return (
+        <aside className="w-64 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 overflow-y-auto z-50 hidden lg:block">
+            <div className="p-6 border-b border-slate-100">
+                <h2 className="text-2xl font-bold text-gradient">HealthCare+</h2>
+                <p className="text-xs text-slate-500 mt-1">Admin Portal</p>
+            </div>
+
+            <nav className="p-4 space-y-1">
+                {menuItems.map((item, index) => (
+                    <NavLink
+                        key={index}
+                        to={item.path}
+                        end={item.path === '/admin'}
+                        className={({ isActive }) =>
+                            `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
+                                ? 'bg-brand-50 text-brand-600 font-semibold shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                            }`
+                        }
+                    >
+                        <item.icon size={20} className="stroke-[2px]" />
+                        <span>{item.label}</span>
+                    </NavLink>
+                ))}
+            </nav>
+
+            <div className="p-4 mt-auto border-t border-slate-100">
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-3 px-4 py-3 w-full rounded-xl text-red-500 hover:bg-red-50 transition-colors"
+                >
+                    <LogOut size={20} />
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+    );
+};
+
+export default Sidebar;
