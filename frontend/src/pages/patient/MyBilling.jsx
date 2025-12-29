@@ -54,7 +54,6 @@ const MyBilling = () => {
                 currency: order.currency,
                 name: "HealthCare Plus",
                 description: `Payment for Bill #${selectedInvoice._id.slice(-6).toUpperCase()}`,
-                image: "https://via.placeholder.com/150",
                 order_id: order.order_id,
                 handler: async function (response) {
                     try {

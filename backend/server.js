@@ -81,5 +81,20 @@ io.on("connection", (socket) => {
 export { io };
 
 const PORT = 4000; // Forced to 4000 to avoid .env override and frontend mismatch
-httpServer.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+httpServer.listen(PORT, () => {
+  console.log(`Server started on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (err, promise) => {
+  console.log(`Error: ${err.message}`);
+  // Close server & exit process
+  // httpServer.close(() => process.exit(1));
+});
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (err) => {
+  console.log(`Error: ${err.message}`);
+  // process.exit(1);
+});
 // Server restarted to clear EADDRINUSE

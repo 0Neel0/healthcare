@@ -150,6 +150,18 @@
   .bg-gradient-subtle {
     @apply bg-gradient-to-b from-[#F4F5F7] to-white;
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full hover:bg-blue-200 transition-colors;
+  }
 }
 
 /* Custom scrollbar - Cleaner */
