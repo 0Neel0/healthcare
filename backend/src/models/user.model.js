@@ -12,13 +12,15 @@ const userSchema = new mongoose.Schema({
   phone: { type: String },
   password: {
     type: String,
-    required: true
+    required: false
   },
   adminPasskey: { type: String },
   role: {
-    type: String, enum: ["admin", "doctor", "receptionist"],
-    default: "receptionist"
+    type: String, enum: ["admin", "doctor", "receptionist", "patient"],
+    default: "patient"
   },
+  googleId: { type: String, unique: true, sparse: true },
+  avatar: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 

@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Mail, Lock, Shield, Stethoscope } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Header from '../components/layout/Header';
+import StickyHeader from '../components/layout/StickyHeader';
 import Footer from '../components/layout/Footer';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Logo from '../components/ui/Logo';
 import patientService from '../services/patientService';
 import authService from '../services/authService';
+import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -28,6 +29,25 @@ const Login = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
+        // Email Validation
+        const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+        if (!emailRegex.test(formData.email)) {
+            const msg = "Please enter a valid email address.";
+            setError(msg);
+            toast.error(msg);
+            setLoading(false);
+            return;
+        }
+
+        // Password Strength Regex Check (User Request: Enforce on Login too)
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(formData.password)) {
+            const msg = "Invalid password format. Password must meet complexity requirements.";
+            setError(msg);
+            toast.error(msg);
+            setLoading(false);
+            return;
+        }
 
         try {
             let res;
@@ -38,10 +58,12 @@ const Login = () => {
                     password: formData.password
                 });
                 localStorage.setItem('token', res.token);
-                localStorage.setItem('user', JSON.stringify(res.patient));
+                // Backend now returns standardized 'user' object, fallback to 'patient' for legacy
+                const userData = res.user || res.patient;
+                localStorage.setItem('user', JSON.stringify(userData));
                 localStorage.setItem('role', 'patient');
 
-                toast.success(`Welcome back, ${res.patient.name}!`);
+                toast.success(`Welcome back, ${userData.name}!`);
                 navigate('/patient/dashboard');
             } else {
                 // Admin or Doctor Login
@@ -75,9 +97,9 @@ const Login = () => {
 
     return (
         <div className="min-h-screen flex flex-col">
-            <Header />
-            <div className="container mx-auto px-4 py-12 flex items-center justify-center flex-grow">
-                <Card className="max-w-md w-full animate-scale-in">
+            <StickyHeader />
+            <div className="container mx-auto px-4 py-16 md:py-24 flex items-center justify-center flex-grow">
+                <Card className="max-w-md w-full animate-scale-in relative overflow-hidden shadow-lg">
                     <div className="text-center mb-8">
                         <div className="flex justify-center mb-6">
                             <Logo className="w-16 h-16" textClassName="text-4xl" />
@@ -87,7 +109,7 @@ const Login = () => {
                     </div>
 
                     {error && (
-                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600">
+                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
                             {error}
                         </div>
                     )}
@@ -100,9 +122,9 @@ const Login = () => {
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: 'patient' })}
-                                    className={`p-3 rounded-xl border flex flex-col items-center justify-center transition-all ${formData.role === 'patient'
-                                            ? 'bg-brand-50 border-brand-500 text-brand-700 ring-1 ring-brand-500'
-                                            : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                                    className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${formData.role === 'patient'
+                                        ? 'bg-[#DEEBFF] border-[#0052CC] text-[#0052CC] ring-2 ring-[#0052CC]/30'
+                                        : 'border-[#DFE1E6] hover:bg-[#F4F5F7] text-[#42526E]'
                                         }`}
                                 >
                                     <User size={20} className="mb-1" />
@@ -111,9 +133,9 @@ const Login = () => {
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: 'doctor' })}
-                                    className={`p-3 rounded-xl border flex flex-col items-center justify-center transition-all ${formData.role === 'doctor'
-                                            ? 'bg-brand-50 border-brand-500 text-brand-700 ring-1 ring-brand-500'
-                                            : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                                    className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${formData.role === 'doctor'
+                                        ? 'bg-[#E3FCEF] border-[#00875A] text-[#00875A] ring-2 ring-[#00875A]/30'
+                                        : 'border-[#DFE1E6] hover:bg-[#F4F5F7] text-[#42526E]'
                                         }`}
                                 >
                                     <Stethoscope size={20} className="mb-1" />
@@ -122,9 +144,9 @@ const Login = () => {
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: 'admin' })}
-                                    className={`p-3 rounded-xl border flex flex-col items-center justify-center transition-all ${formData.role === 'admin'
-                                            ? 'bg-brand-50 border-brand-500 text-brand-700 ring-1 ring-brand-500'
-                                            : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                                    className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${formData.role === 'admin'
+                                        ? 'bg-[#FFF0B3] border-[#FF991F] text-[#FF991F] ring-2 ring-[#FF991F]/30'
+                                        : 'border-[#DFE1E6] hover:bg-[#F4F5F7] text-[#42526E]'
                                         }`}
                                 >
                                     <Shield size={20} className="mb-1" />
@@ -163,18 +185,33 @@ const Login = () => {
                             />
                         </div>
 
-                        <Button type="submit" variant="primary" className="w-full" disabled={loading}>
+                        <Button type="submit" variant="medical" className="w-full" disabled={loading}>
                             {loading ? 'Logging in...' : 'Sign In'}
                         </Button>
                     </form>
 
+                    <div className="mt-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-gray-300"></span>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                            </div>
+                        </div>
+                        <GoogleLoginButton text="Sign in with Google" />
+                    </div>
+
                     <div className="mt-6 text-center text-sm text-gray-500">
                         Don't have an account? {' '}
-                        <Link to="/register" className="text-brand-600 font-bold hover:underline">
+                        <Link to="/register" className="text-[#0052CC] font-bold hover:underline">
                             Register now
                         </Link>
                     </div>
                 </Card>
+                <div className="absolute top-4 right-4 z-50">
+                    {/* Optional floating elements */}
+                </div>
             </div>
             <Footer />
         </div>

@@ -12,7 +12,7 @@ import patientService from '../services/patientService';
 
 const PatientRegistration = () => {
     const navigate = useNavigate();
-    const { register, handleSubmit, formState: { errors } } = useForm();
+    const { register, handleSubmit, formState: { errors }, control, watch } = useForm();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -23,6 +23,26 @@ const PatientRegistration = () => {
         try {
             setLoading(true);
             setError('');
+
+            // Email Validation
+            const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+            if (!emailRegex.test(data.email)) {
+                const msg = "Please enter a valid email address.";
+                setError(msg);
+                toast.error(msg);
+                setLoading(false);
+                return;
+            }
+
+            // Validate Password Strength
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!passwordRegex.test(data.password)) {
+                const msg = "Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character.";
+                setError(msg);
+                toast.error(msg);
+                setLoading(false);
+                return;
+            }
 
             const patientData = {
                 ...data,
@@ -80,8 +100,42 @@ const PatientRegistration = () => {
                         <FormField label="Full Name" name="name" register={register} error={errors.name} required />
                         <FormField label="Email" name="email" type="email" register={register} error={errors.email} required />
                         <FormField label="Password" name="password" type="password" register={register} error={errors.password} required />
+                        {watch('password') && (
+                            <div className="mb-4 space-y-2 animate-fade-in relative -mt-3">
+                                <div className="flex gap-1 h-1.5">
+                                    {[1, 2, 3, 4, 5].map((level) => {
+                                        const val = watch('password');
+                                        const strength = [
+                                            val.length >= 8,
+                                            /[A-Z]/.test(val),
+                                            /[a-z]/.test(val),
+                                            /\d/.test(val),
+                                            /[@$!%*?&]/.test(val)
+                                        ].filter(Boolean).length;
+
+                                        let color = 'bg-gray-200';
+                                        if (strength >= level) {
+                                            if (strength <= 2) color = 'bg-red-500';
+                                            else if (strength <= 4) color = 'bg-yellow-500';
+                                            else color = 'bg-green-500';
+                                        }
+
+                                        return (
+                                            <div key={level} className={`flex-1 rounded-full ${color} transition-all duration-300`} />
+                                        );
+                                    })}
+                                </div>
+                                <ul className="text-xs space-y-1 text-gray-500">
+                                    <li className={watch('password').length >= 8 ? 'text-green-600' : ''}>• At least 8 characters</li>
+                                    <li className={/[A-Z]/.test(watch('password')) ? 'text-green-600' : ''}>• One uppercase letter</li>
+                                    <li className={/[a-z]/.test(watch('password')) ? 'text-green-600' : ''}>• One lowercase letter</li>
+                                    <li className={/\d/.test(watch('password')) ? 'text-green-600' : ''}>• One number</li>
+                                    <li className={/[@$!%*?&]/.test(watch('password')) ? 'text-green-600' : ''}>• One special char (@$!%*?&)</li>
+                                </ul>
+                            </div>
+                        )}
                         <FormField label="Phone" name="phone" type="tel" register={register} error={errors.phone} required />
-                        <FormField label="Date of Birth" name="birthDate" type="date" register={register} error={errors.birthDate} required />
+                        <FormField label="Date of Birth" name="birthDate" type="datepicker" control={control} error={errors.birthDate} required maxDate={new Date()} />
                         <FormField
                             label="Gender"
                             name="gender"

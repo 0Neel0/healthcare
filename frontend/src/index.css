@@ -3,8 +3,33 @@
 
 @layer base {
   :root {
-    --gradient-start: #0ea5e9;
-    --gradient-end: #14b8a6;
+    /* Professional Clinical Color System */
+    --clinical-blue: #0052CC;
+    --clinical-blue-dark: #003D99;
+    --clinical-blue-light: #4C9AFF;
+
+    --medical-green: #00875A;
+    --medical-green-dark: #006644;
+    --medical-green-light: #57D9A3;
+
+    --clinical-gray: #42526E;
+    --clinical-gray-light: #7A869A;
+    --clinical-gray-dark: #253858;
+
+    --bg-clinical: #F4F5F7;
+    --bg-white: #FFFFFF;
+    --bg-hover: #EBECF0;
+
+    /* Medical Status Colors */
+    --status-critical: #DE350B;
+    --status-warning: #FF991F;
+    --status-stable: #00875A;
+    --status-info: #0065FF;
+    --status-pending: #6554C0;
+
+    /* Legacy support */
+    --medical-blue: #0052CC;
+    --health-green: #00875A;
   }
 
   * {
@@ -12,7 +37,8 @@
   }
 
   body {
-    @apply bg-slate-50 min-h-screen text-slate-800 antialiased font-sans;
+    @apply bg-[#F4F5F7] min-h-screen text-[#42526E] antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   }
 
   h1,
@@ -27,63 +53,102 @@
 
 @layer components {
 
-  /* Modern Glass Effect - Cleaner & Sharper */
+  /* Professional Glass Effect - Subtle */
   .glass-effect {
-    @apply bg-white/80 backdrop-blur-md border border-white/50 shadow-sm supports-[backdrop-filter]:bg-white/60;
+    @apply bg-white/95 backdrop-blur-sm border border-slate-200 shadow-sm;
   }
 
-  /* Medical Gradient Button - Primary */
+  /* Clinical Blue Button - Primary */
   .btn-gradient {
-    @apply bg-gradient-to-r from-sky-500 to-teal-500 text-white font-medium shadow-md shadow-sky-500/20;
-    @apply hover:shadow-lg hover:shadow-sky-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95;
-    @apply transition-all duration-300 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-[#0052CC] text-white font-semibold shadow-sm;
+    @apply hover:bg-[#003D99] hover:shadow active:bg-[#002E73];
+    @apply transition-colors duration-150 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Medical Green Button */
+  .btn-medical {
+    @apply bg-[#00875A] text-white font-semibold shadow-sm;
+    @apply hover:bg-[#006644] hover:shadow active:bg-[#004D32];
+    @apply transition-colors duration-150 rounded-lg;
+  }
+
+  /* Professional Orange Button - High Priority */
+  .btn-demo {
+    @apply bg-[#FF991F] text-white font-semibold shadow-sm;
+    @apply hover:bg-[#E67E00] hover:shadow active:bg-[#CC6F00];
+    @apply transition-colors duration-150 rounded-lg;
+  }
+
+  /* Clinical Blue Button - Alternative */
+  .btn-primary-blue {
+    @apply bg-[#0052CC] text-white font-semibold shadow-sm;
+    @apply hover:bg-[#003D99] hover:shadow active:bg-[#002E73];
+    @apply transition-colors duration-150 rounded-lg;
   }
 
   /* Secondary/Outline Button */
   .btn-outline {
-    @apply border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300;
-    @apply font-medium transition-all duration-300 shadow-sm hover:shadow-md rounded-xl disabled:opacity-50 disabled:cursor-not-allowed;
-    @apply hover:-translate-y-0.5 active:translate-y-0;
+    @apply border border-[#DFE1E6] bg-white text-[#42526E] hover:bg-[#F4F5F7] hover:border-[#C1C7D0];
+    @apply font-medium transition-colors duration-150 shadow-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* Danger Button */
   .btn-danger {
-    @apply bg-red-50 text-red-600 border border-red-100 hover:bg-red-500 hover:text-white hover:border-red-500;
-    @apply font-medium transition-all duration-300 shadow-sm hover:shadow-red-500/30 rounded-xl;
-    @apply hover:-translate-y-0.5 active:translate-y-0;
+    @apply bg-[#DE350B] text-white font-semibold shadow-sm;
+    @apply hover:bg-[#BF2600] hover:shadow active:bg-[#A02100];
+    @apply transition-colors duration-150 rounded-lg;
   }
 
   /* Success Button */
   .btn-success {
-    @apply bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white hover:border-emerald-500;
-    @apply font-medium transition-all duration-300 shadow-sm hover:shadow-emerald-500/30 rounded-xl;
-    @apply hover:-translate-y-0.5 active:translate-y-0;
+    @apply bg-[#00875A] text-white font-semibold shadow-sm;
+    @apply hover:bg-[#006644] hover:shadow active:bg-[#004D32];
+    @apply transition-colors duration-150 rounded-lg;
   }
 
   /* Ghost Button */
   .btn-ghost {
-    @apply bg-transparent text-slate-500 hover:text-indigo-600 hover:bg-indigo-50;
-    @apply font-medium transition-all duration-300 rounded-xl;
+    @apply bg-transparent text-[#42526E] hover:text-[#0052CC] hover:bg-[#F4F5F7];
+    @apply font-medium transition-colors duration-150 rounded-lg;
   }
 
   .card-hover {
-    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+    @apply transition-shadow duration-200 hover:shadow-md;
   }
 
   .input-modern {
-    @apply w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800;
-    @apply focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 outline-none transition-all duration-200;
-    @apply placeholder:text-slate-400;
+    @apply w-full px-4 py-2.5 rounded-lg border border-[#DFE1E6] bg-white text-[#42526E];
+    @apply focus:border-[#0052CC] focus:ring-2 focus:ring-[#0052CC]/10 outline-none transition-colors duration-150;
+    @apply placeholder:text-[#7A869A];
   }
 
   .label-modern {
-    @apply block text-sm font-medium text-slate-700 mb-1.5;
+    @apply block text-sm font-semibold text-[#253858] mb-1.5;
   }
 }
 
 @layer utilities {
   .text-gradient {
-    @apply bg-gradient-to-r from-sky-600 to-teal-600 bg-clip-text text-transparent;
+    @apply text-[#0052CC];
+  }
+
+  /* Alternating section utilities */
+  .section-alternate-left {
+    @apply grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center;
+  }
+
+  .section-alternate-right {
+    @apply grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center;
+  }
+
+  /* Medical solid background */
+  .bg-gradient-medical {
+    @apply bg-[#0052CC];
+  }
+
+  /* Gradient subtle background for sections */
+  .bg-gradient-subtle {
+    @apply bg-gradient-to-b from-[#F4F5F7] to-white;
   }
 }
 
@@ -99,4 +164,65 @@
 
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+}
+
+/* React DatePicker Custom Styles */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker {
+  @apply border border-slate-200 rounded-xl shadow-lg;
+  font-family: 'Inter', sans-serif;
+}
+
+.react-datepicker__header {
+  @apply bg-[#0052CC] border-b-0 rounded-t-xl;
+  padding-top: 12px;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  @apply text-white;
+}
+
+.react-datepicker__day {
+  @apply text-slate-700 rounded-lg hover:bg-[#DEEBFF] transition-colors;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  @apply bg-[#0052CC] text-white;
+  font-weight: 600;
+}
+
+.react-datepicker__day--today {
+  @apply font-bold border border-[#0052CC];
+}
+
+.react-datepicker__day:hover {
+  @apply bg-[#DEEBFF];
+}
+
+.react-datepicker__navigation {
+  top: 12px;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: white;
+}
+
+.react-datepicker__month-dropdown,
+.react-datepicker__year-dropdown {
+  @apply bg-white border border-slate-200 rounded-lg shadow-md;
+}
+
+.react-datepicker__month-option,
+.react-datepicker__year-option {
+  @apply hover:bg-[#DEEBFF] text-slate-700;
+}
+
+.react-datepicker__month-option--selected,
+.react-datepicker__year-option--selected {
+  @apply bg-[#0052CC] text-white;
 }

@@ -2,10 +2,13 @@ import React from 'react';
 import { formatDateTime } from '../../utils/helpers';
 import { Calendar, User, Stethoscope, Clock, Check, X, Eye, MoreHorizontal, AlertCircle } from 'lucide-react';
 
-const AppointmentTable = ({ appointments, onSchedule, onCancel, onView }) => {
+const AppointmentTable = ({ appointments, onSchedule, onCancel, onView, onRequestConfirmation }) => {
 
     const getStatusStyle = (status) => {
         switch (status) {
+            case 'pending_admin': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'pending_doctor': return 'bg-orange-100 text-orange-700 border-orange-200';
+            case 'pending_payment': return 'bg-blue-100 text-blue-700 border-blue-200';
             case 'scheduled': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             case 'pending': return 'bg-amber-100 text-amber-700 border-amber-200';
             case 'cancelled': return 'bg-red-50 text-red-600 border-red-100';
@@ -78,6 +81,16 @@ const AppointmentTable = ({ appointments, onSchedule, onCancel, onView }) => {
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusStyle(appointment.status)} capitalize`}>
                                         {appointment.status}
                                     </span>
+                                    {appointment.billingStatus === 'requested' && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border bg-amber-100 text-amber-800 border-amber-200 ml-2 animate-pulse">
+                                            Bill Requested
+                                        </span>
+                                    )}
+                                    {appointment.billingStatus === 'generated' && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border bg-blue-100 text-blue-800 border-blue-200 ml-2">
+                                            Billed
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="py-4 px-6 text-right">
                                     <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
@@ -89,6 +102,16 @@ const AppointmentTable = ({ appointments, onSchedule, onCancel, onView }) => {
                                                 title="View Details"
                                             >
                                                 <Eye size={18} />
+                                            </button>
+                                        )}
+
+                                        {appointment.status === 'pending_admin' && onRequestConfirmation && (
+                                            <button
+                                                onClick={() => onRequestConfirmation(appointment)}
+                                                className="p-2 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1"
+                                                title="Request Doctor Confirmation"
+                                            >
+                                                <Stethoscope size={18} />
                                             </button>
                                         )}
 

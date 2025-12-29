@@ -20,6 +20,26 @@ const PatientLogin = () => {
         setError('');
         setLoading(true);
 
+        // Email Validation
+        const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+        if (!emailRegex.test(credentials.email)) {
+            const msg = "Please enter a valid email address.";
+            setError(msg);
+            toast.error(msg);
+            setLoading(false);
+            return;
+        }
+
+        // Password Strength Regex Check
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(credentials.password)) {
+            const msg = "Invalid password format. Password must meet complexity requirements.";
+            setError(msg);
+            toast.error(msg);
+            setLoading(false);
+            return;
+        }
+
         try {
             const res = await patientService.login(credentials);
             // Store token/user - For now simple storage

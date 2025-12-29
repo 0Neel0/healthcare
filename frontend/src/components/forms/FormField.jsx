@@ -1,10 +1,13 @@
 import React from 'react';
+import { Controller } from 'react-hook-form';
+import DatePicker from '../ui/DatePicker';
 
 const FormField = ({
     label,
     name,
     type = 'text',
     register,
+    control, // Added for DatePicker
     error,
     required = false,
     placeholder = '',
@@ -12,6 +15,26 @@ const FormField = ({
     ...props
 }) => {
     const renderInput = () => {
+        // DatePicker field
+        if (type === 'datepicker') {
+            return (
+                <Controller
+                    name={name}
+                    control={control}
+                    rules={{ required: required && `${label} is required` }}
+                    render={({ field }) => (
+                        <DatePicker
+                            selected={field.value}
+                            onChange={field.onChange}
+                            placeholder={placeholder || `Select ${label.toLowerCase()}`}
+                            required={required}
+                            {...props}
+                        />
+                    )}
+                />
+            );
+        }
+
         if (type === 'select') {
             return (
                 <select

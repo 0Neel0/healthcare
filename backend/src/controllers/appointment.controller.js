@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Appointment } from "../models/appointment.model.js";
 import { Patient } from "../models/patient.model.js";
 import * as smsService from "../services/sms.service.js";
@@ -5,27 +6,30 @@ import * as smsService from "../services/sms.service.js";
 /**
  * Create a new appointment (Patient-facing)
  */
+// Import io from server
+import { io } from "../../server.js";
+
+/**
+ * Create a new appointment (Patient-facing)
+ * Initial Status: pending_admin
+ */
 const createAppointment = async (req, res, next) => {
     try {
         const { userId, primaryPhysician, schedule, reason, note, patientId } = req.body;
 
-        // Validate required fields
+        // ... validation ...
         if (!userId || !primaryPhysician || !schedule || !reason) {
             return res.status(400).json({
                 message: 'Missing required fields: userId, primaryPhysician, schedule, reason'
             });
         }
 
-        // Find patient by ID or create reference
         let patient = null;
         if (patientId) {
             patient = await Patient.findById(patientId);
-            if (!patient) {
-                return res.status(404).json({ message: 'Patient not found' });
-            }
+            if (!patient) return res.status(404).json({ message: 'Patient not found' });
         }
 
-        // Create appointment with pending status
         const appointment = await Appointment.create({
             patient: patient?._id,
             userId,
@@ -33,14 +37,73 @@ const createAppointment = async (req, res, next) => {
             schedule: new Date(schedule),
             reason,
             note,
-            status: 'pending'
+            status: 'pending_admin' // Initial status
         });
 
-        // Populate patient data for response
-        const populatedAppointment = await Appointment.findById(appointment._id)
-            .populate('patient');
+        const populatedAppointment = await Appointment.findById(appointment._id).populate('patient');
+
+        // Notify Admin
+        io.emit('new_appointment_request', populatedAppointment);
 
         res.status(201).json(populatedAppointment);
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Admin requests doctor confirmation
+ * Status: pending_doctor
+ */
+const adminRequestConfirmation = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const appointment = await Appointment.findByIdAndUpdate(
+            id,
+            { status: 'pending_doctor', updatedAt: new Date() },
+            { new: true }
+        ).populate('patient');
+
+        if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+        // Emit to specific Doctor
+        // Assuming doctor joins room "doctor_{doctorName}"
+        io.to(`doctor_${appointment.primaryPhysician}`).emit('doctor_confirmation_request', appointment);
+
+        res.json(appointment);
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Doctor confirms and sets fee
+ * Status: pending_payment
+ */
+const doctorConfirmAppointment = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { consultationFee } = req.body;
+
+        if (!consultationFee) return res.status(400).json({ message: 'Consultation fee required' });
+
+        const appointment = await Appointment.findByIdAndUpdate(
+            id,
+            {
+                status: 'pending_payment',
+                consultationFee,
+                updatedAt: new Date()
+            },
+            { new: true }
+        ).populate('patient');
+
+        if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+        // Notify Admin and Patient
+        io.to('admin_room').emit('doctor_confirmed', appointment);
+        io.to(`patient_${appointment.userId}`).emit('payment_request', appointment);
+
+        res.json(appointment);
     } catch (err) {
         next(err);
     }
@@ -237,6 +300,124 @@ const deleteAppointment = async (req, res, next) => {
     }
 };
 
+/**
+ * Get appointments for a specific patient
+ */
+const getPatientAppointments = async (req, res, next) => {
+    try {
+        const { patientId } = req.params;
+        console.log(`[GetPatientAppointments] Fetching for ID: ${patientId}`);
+
+        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+            console.error(`[GetPatientAppointments] Invalid Patient ID: ${patientId}`);
+            return res.status(400).json({ message: 'Invalid Patient ID format' });
+        }
+
+        const appointments = await Appointment.find({ patient: patientId })
+            .sort({ schedule: -1 })
+            .populate('patient');
+
+        console.log(`[GetPatientAppointments] Found ${appointments.length} appointments`);
+        res.json(appointments);
+    } catch (err) {
+        console.error('[GetPatientAppointments Error]', err);
+        next(err);
+    }
+};
+
+/**
+ * Get appointments for a specific doctor
+ */
+const getDoctorAppointments = async (req, res, next) => {
+    try {
+        const { doctorName } = req.params;
+        const { date } = req.query;
+
+        let query = { primaryPhysician: doctorName };
+
+        // Filter by date if provided
+        if (date === 'today') {
+            const start = new Date();
+            start.setHours(0, 0, 0, 0);
+            const end = new Date();
+            end.setHours(23, 59, 59, 999);
+            query.schedule = { $gte: start, $lte: end };
+        }
+
+        const appointments = await Appointment.find(query)
+            .populate('patient')
+            .sort({ schedule: 1 }); // Sort by schedule ascending
+
+        res.json(appointments);
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Update appointment status (for workflow: pending -> ongoing -> completed)
+ */
+const updateStatus = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const validStatuses = ['pending', 'scheduled', 'ongoing', 'completed', 'cancelled'];
+
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+            });
+        }
+
+        const appointment = await Appointment.findByIdAndUpdate(
+            id,
+            { status, updatedAt: new Date() },
+            { new: true }
+        ).populate('patient');
+
+        if (!appointment) {
+            return res.status(404).json({ message: 'Appointment not found' });
+        }
+
+        res.json(appointment);
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Update billing status (Doctor/Admin)
+ */
+const updateBillingStatus = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { billingStatus } = req.body;
+
+        const validStatuses = ['unbilled', 'requested', 'generated'];
+
+        if (!validStatuses.includes(billingStatus)) {
+            return res.status(400).json({
+                message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+            });
+        }
+
+        const appointment = await Appointment.findByIdAndUpdate(
+            id,
+            { billingStatus, updatedAt: new Date() },
+            { new: true }
+        ).populate('patient');
+
+        if (!appointment) {
+            return res.status(404).json({ message: 'Appointment not found' });
+        }
+
+        res.json(appointment);
+    } catch (err) {
+        next(err);
+    }
+};
+
 const appointmentController = {
     createAppointment,
     getAppointment,
@@ -245,7 +426,13 @@ const appointmentController = {
     scheduleAppointment,
     cancelAppointment,
     updateAppointment,
-    deleteAppointment
+    deleteAppointment,
+    getPatientAppointments,
+    getDoctorAppointments,
+    updateStatus,
+    updateBillingStatus,
+    adminRequestConfirmation,
+    doctorConfirmAppointment
 };
 
 export default appointmentController;

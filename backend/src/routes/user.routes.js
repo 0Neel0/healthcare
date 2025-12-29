@@ -4,6 +4,10 @@ const userRoutes = express.Router();
 
 userRoutes.post("/register", userController.register);
 userRoutes.post("/login", userController.login);
-userRoutes.delete("/logout/:id",userController.logout);
+userRoutes.post("/google", userController.googleLogin);
+userRoutes.delete("/logout/:id", userController.logout);
+userRoutes.get("/doctors", userController.getDoctors);
+userRoutes.put("/:id", userController.updateUser);
+userRoutes.delete("/:id", userController.deleteUser);
 
 export default userRoutes;

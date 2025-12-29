@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Download, CheckCircle, AlertCircle } from 'lucide-react';
 import { billingService } from '../../services/billingService';
+import paymentService from '../../services/paymentService'; // Import payment service
 import Card from '../../components/ui/Card';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
+import toast from 'react-hot-toast';
 
 const MyBilling = () => {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [showPayModal, setShowPayModal] = useState(false);
-    const user = JSON.parse(localStorage.getItem('patientUser') || '{}');
+    const [payLoading, setPayLoading] = useState(false); // New loading state for payment
+    const user = JSON.parse(localStorage.getItem('patientUser') || localStorage.getItem('user') || '{}');
+
+    // Load Razorpay script on mount
+    useEffect(() => {
+        paymentService.loadRazorpayScript();
+    }, []);
 
     const loadInvoices = async () => {
         if (!user._id) return;
@@ -20,6 +28,7 @@ const MyBilling = () => {
             setInvoices(res.data);
         } catch (err) {
             console.error("Failed to load invoices", err);
+            toast.error("Failed to load invoices");
         } finally {
             setLoading(false);
         }
@@ -31,18 +40,71 @@ const MyBilling = () => {
 
     const handlePay = async (e) => {
         e.preventDefault();
-        // Simulate Payment
+        if (!selectedInvoice) return;
+
+        setPayLoading(true);
         try {
-            await billingService.updatePayment(selectedInvoice._id, {
-                paymentStatus: 'Paid',
-                paymentMethod: 'Online',
-                transactionId: 'TXN-' + Date.now()
-            });
-            setShowPayModal(false);
-            loadInvoices(); // Refresh
-            alert('Payment Successful!');
+            // 1. Create Order via Billing Service (which calls Payment Service)
+            const order = await billingService.payBill(selectedInvoice._id, selectedInvoice.totalAmount);
+
+            // 2. Open Razorpay Modal
+            const options = {
+                key: order.keyId,
+                amount: order.amount,
+                currency: order.currency,
+                name: "HealthCare Plus",
+                description: `Payment for Bill #${selectedInvoice._id.slice(-6).toUpperCase()}`,
+                image: "https://via.placeholder.com/150",
+                order_id: order.order_id,
+                handler: async function (response) {
+                    try {
+                        // 3. Verify Payment
+                        const verification = await billingService.verifyBillPayment({
+                            ...response,
+                            billingId: selectedInvoice._id
+                        });
+
+                        if (verification.success) {
+                            toast.success('Payment successful!');
+                            setShowPayModal(false);
+                            loadInvoices(); // Refresh list to show Paid
+                        } else {
+                            toast.error('Payment verification failed');
+                        }
+                    } catch (err) {
+                        toast.error('Payment verification failed');
+                        console.error(err);
+                    }
+                },
+                prefill: {
+                    name: user.name,
+                    email: user.email,
+                    contact: user.phone
+                },
+                theme: {
+                    color: "#0052CC"
+                },
+                modal: {
+                    ondismiss: function () {
+                        toast('Payment cancelled');
+                        setPayLoading(false);
+                    }
+                }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+
+            // Note: We don't setPayLoading(false) here immediately because we wait for user action in modal
+            // But we can reset it if we want the "Processing" text to go away while they browse the modal.
+            // Usually keeping it is fine or setting it false. Let's set it false to allow re-clicks if needed
+            // though the modal is open.
+            setPayLoading(false);
+
         } catch (err) {
-            alert('Payment failed');
+            console.error('Payment initialization failed:', err);
+            toast.error('Could not initiate payment');
+            setPayLoading(false);
         }
     };
 
@@ -51,7 +113,9 @@ const MyBilling = () => {
             <h1 className="text-2xl font-bold text-slate-900">My Billing & Payments</h1>
 
             {loading ? (
-                <p className="text-center text-slate-500">Loading billing info...</p>
+                <div className="flex justify-center p-12">
+                    <div className="w-10 h-10 border-4 border-medical-blue-200 border-t-medical-blue-600 rounded-full animate-spin"></div>
+                </div>
             ) : invoices.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
                     <CreditCard className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -71,7 +135,7 @@ const MyBilling = () => {
                                         <span className="text-xs text-slate-500">{new Date(inv.createdAt).toLocaleDateString()}</span>
                                     </div>
                                     <div className="flex items-end gap-2">
-                                        <h3 className="text-2xl font-bold text-slate-900">${inv.totalAmount}</h3>
+                                        <h3 className="text-2xl font-bold text-slate-900">₹{inv.totalAmount}</h3>
                                         <span className={`text-sm font-medium px-2 py-0.5 rounded-full mb-1 ${inv.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                             }`}>
                                             {inv.paymentStatus}
@@ -94,8 +158,8 @@ const MyBilling = () => {
                                             <CreditCard size={18} /> Pay Now
                                         </Button>
                                     ) : (
-                                        <Button variant="outline" className="flex items-center gap-2 text-slate-500">
-                                            <Download size={18} /> Receipt
+                                        <Button variant="outline" className="flex items-center gap-2 text-slate-500" disabled>
+                                            <CheckCircle size={18} /> Paid
                                         </Button>
                                     )}
                                 </div>
@@ -110,22 +174,15 @@ const MyBilling = () => {
                 <form onSubmit={handlePay} className="space-y-6">
                     <div className="text-center p-6 bg-slate-50 rounded-xl">
                         <p className="text-slate-500 mb-1">Total Amount</p>
-                        <p className="text-4xl font-bold text-slate-900">${selectedInvoice?.totalAmount}</p>
+                        <p className="text-4xl font-bold text-slate-900">₹{selectedInvoice?.totalAmount}</p>
                     </div>
 
-                    <div>
-                        <label className="label-modern">Card Details (Mock)</label>
-                        <div className="p-3 border rounded-xl bg-white flex items-center gap-3">
-                            <CreditCard className="text-slate-400" />
-                            <input className="outline-none w-full" placeholder="0000 0000 0000 0000" disabled />
-                        </div>
-                        <p className="text-xs text-slate-400 mt-2 text-center">
-                            * This is a demo environment. No real money will be deducted.
-                        </p>
+                    <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 border border-blue-200">
+                        Proceed to pay securely via Razorpay. Supported methods: UPI, Cards, Netbanking.
                     </div>
 
-                    <Button type="submit" variant="success" className="w-full">
-                        Confirm Payment
+                    <Button type="submit" variant="success" className="w-full text-lg py-3" disabled={payLoading}>
+                        {payLoading ? 'Processing...' : 'Proceed to Pay'}
                     </Button>
                 </form>
             </Modal>

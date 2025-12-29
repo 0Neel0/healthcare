@@ -131,3 +131,38 @@ Please contact us to reschedule.
         return { success: false, error: error.message };
     }
 };
+
+/**
+ * Send bill notification SMS
+ * @param {string} to - Recipient phone number
+ * @param {number} amount - Bill amount
+ */
+export const sendBillNotification = async (to, amount) => {
+    if (!twilioClient) {
+        console.warn('Twilio not configured. Skipping SMS notification.');
+        return { success: false, message: 'Twilio not configured' };
+    }
+
+    try {
+        const message = `
+CarePulse Billing Update
+
+A new bill of $${amount} has been generated for your recent visit.
+Please log in to your dashboard to view and pay.
+
+https://carepulse.com/patient/billing
+        `.trim();
+
+        const result = await twilioClient.messages.create({
+            body: message,
+            from: twilioPhone,
+            to: to
+        });
+
+        console.log('SMS sent successfully:', result.sid);
+        return { success: true, sid: result.sid };
+    } catch (error) {
+        console.error('Error sending SMS:', error.message);
+        return { success: false, error: error.message };
+    }
+};

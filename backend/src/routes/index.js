@@ -11,6 +11,9 @@ import labRoutes from "./lab.routes.js"
 import wardRoutes from "./ward.routes.js"
 import staffRoutes from "./staff.routes.js"
 import reportRoutes from "./report.routes.js"
+import prescriptionRoutes from "./prescription.routes.js"
+
+import paymentRoutes from "./payment.routes.js"
 
 routes.use("/user", userRoutes);
 routes.use("/doctors", doctorRoutes);
@@ -23,5 +26,7 @@ routes.use("/lab", labRoutes);
 routes.use("/wards", wardRoutes);
 routes.use("/staff", staffRoutes);
 routes.use("/reports", reportRoutes);
+routes.use("/prescriptions", prescriptionRoutes);
+routes.use("/payment", paymentRoutes);
 
 export default routes;

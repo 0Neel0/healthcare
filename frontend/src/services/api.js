@@ -15,6 +15,12 @@ api.interceptors.request.use(
         if (passkey) {
             config.headers['x-admin-passkey'] = passkey;
         }
+
+        // Add JWT token from localStorage if available
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
         return config;
     },
     (error) => {
@@ -26,6 +32,19 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Log detailed error information for debugging
+        if (error.response) {
+            console.error('[API Error]', {
+                status: error.response.status,
+                url: error.config?.url,
+                method: error.config?.method,
+                message: error.response.data?.message || error.message,
+                data: error.response.data
+            });
+        } else {
+            console.error('[API Network Error]', error.message);
+        }
+
         if (error.response?.status === 401) {
             // Clear invalid passkey
             localStorage.removeItem('adminPasskey');

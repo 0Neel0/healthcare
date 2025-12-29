@@ -14,15 +14,20 @@ import {
     LogOut
 } from 'lucide-react';
 import Logo from '../ui/Logo';
+import toast from 'react-hot-toast';
 
 const Sidebar = () => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        if (window.confirm('Logout of Admin Portal?')) {
-            localStorage.removeItem('adminPasskey');
-            navigate('/admin/login');
-        }
+        // Clear all data
+        localStorage.clear();
+
+        toast.success('Logged out successfully!');
+
+        setTimeout(() => {
+            navigate('/login', { replace: true });
+        }, 100);
     };
 
     const menuItems = [
@@ -68,7 +73,7 @@ const Sidebar = () => {
             <div className="p-4 mt-auto border-t border-slate-100">
                 <button
                     onClick={handleLogout}
-                    className="flex items-center space-x-3 px-4 py-3 w-full rounded-xl text-red-500 hover:bg-red-50 transition-colors"
+                    className="flex items-center space-x-3 px-4 py-3 w-full rounded-xl text-red-500 hover:bg-red-50 transition-colors font-semibold"
                 >
                     <LogOut size={20} />
                     <span>Logout</span>

@@ -16,47 +16,61 @@ export default {
                 sans: ['Inter', 'system-ui', 'sans-serif'],
             },
             colors: {
-                // Semantic Medical Colors
+                // DocPulse Medical Theme Colors
+                'medical-blue': {
+                    50: '#E3F2FD',
+                    100: '#BBDEFB',
+                    200: '#90CAF9',
+                    300: '#64B5F6',
+                    400: '#42A5F5',
+                    500: '#1976D2',  // Primary Medical Blue
+                    600: '#1565C0',
+                    700: '#0D47A1',
+                    800: '#0A3D91',
+                    900: '#073375',
+                },
+                'health-green': {
+                    50: '#F0FDF4',
+                    100: '#DCFCE7',
+                    200: '#BBF7D0',
+                    300: '#86EFAC',
+                    400: '#4ADE80',
+                    500: '#22C55E',  // Primary Health Green
+                    600: '#16A34A',
+                    700: '#15803D',
+                    800: '#166534',
+                    900: '#14532D',
+                },
+                'demo-orange': {
+                    50: '#FFF7ED',
+                    100: '#FFEDD5',
+                    200: '#FED7AA',
+                    300: '#FDBA74',
+                    400: '#FB923C',
+                    500: '#F97316',  // Primary Demo Orange
+                    600: '#EA580C',
+                    700: '#C2410C',
+                    800: '#9A3412',
+                    900: '#7C2D12',
+                },
+                // Legacy support
                 brand: {
-                    50: '#f0f9ff',
-                    100: '#e0f2fe',
-                    200: '#bae6fd',
-                    300: '#7dd3fc',
-                    400: '#38bdf8',
-                    500: '#0ea5e9',  // Primary Blue
-                    600: '#0284c7',
-                    700: '#0369a1',
-                    800: '#075985',
-                    900: '#0c4a6e',
+                    500: '#1976D2',
+                    600: '#1565C0',
                 },
                 accent: {
-                    50: '#f0fdfa',
-                    100: '#ccfbf1',
-                    200: '#99f6e4',
-                    300: '#5eead4',
-                    400: '#2dd4bf',
-                    500: '#14b8a6', // Medical Teal
-                    600: '#0d9488',
-                    700: '#0f766e',
-                    800: '#115e59',
-                    900: '#134e4a',
+                    500: '#22C55E',
+                    600: '#16A34A',
                 },
-                surface: {
-                    50: '#f8fafc',
-                    100: '#f1f5f9',
-                    200: '#e2e8f0',
-                    300: '#cbd5e1',
-                    400: '#94a3b8',
-                }
             },
             backgroundImage: {
-                'gradient-medical': 'linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%)', // Blue to Teal
-                'gradient-subtle': 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                'gradient-warm': 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)', // Warning/Action
+                'gradient-medical': 'linear-gradient(135deg, #1976D2 0%, #22C55E 100%)',
+                'gradient-subtle': 'linear-gradient(135deg, #E3F2FD 0%, #F0FDF4 100%)',
+                'gradient-demo': 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
             },
             boxShadow: {
-                'soft': '0 4px 6px -1px rgba(14, 165, 233, 0.1), 0 2px 4px -1px rgba(14, 165, 233, 0.06)',
-                'glow': '0 0 15px rgba(14, 165, 233, 0.3)',
+                'soft': '0 4px 6px -1px rgba(25, 118, 210, 0.1), 0 2px 4px -1px rgba(25, 118, 210, 0.06)',
+                'glow': '0 0 15px rgba(25, 118, 210, 0.3)',
             }
         },
     },

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { RefreshCw } from 'lucide-react';
+import PasskeyModal from '../../components/admin/PasskeyModal';
 import { appointmentService } from '../../services/appointmentService';
 import AppointmentTable from '../../components/appointment/AppointmentTable';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import FormField from '../../components/forms/FormField';
-import { useForm } from 'react-hook-form';
-import { RefreshCw } from 'lucide-react';
+import { useSocket } from '../../context/SocketContext';
 
 const Appointments = () => {
     const { register, handleSubmit, formState: { errors }, reset } = useForm();
@@ -17,7 +19,38 @@ const Appointments = () => {
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
+
+    const onCreateSubmit = async (data) => {
+        try {
+            setActionLoading(true);
+            await appointmentService.createAppointment({
+                ...data,
+                userId: data.patientId // Backend expects userId too, usually same as patientId for patient-centric actions
+            });
+            setShowCreateModal(false);
+            reset();
+            fetchAppointments();
+        } catch (error) {
+            console.error(error);
+            alert('Failed to create appointment. Verify Patient ID.');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Socket Listener
+    const socket = useSocket();
+
+    useEffect(() => {
+        if (!socket) return;
+        socket.on('doctor_confirmed', (appt) => {
+            // Ideally fetch or update local state
+            fetchAppointments();
+        });
+        return () => socket.off('doctor_confirmed');
+    }, [socket]);
 
     useEffect(() => {
         fetchAppointments();
@@ -26,6 +59,12 @@ const Appointments = () => {
     const fetchAppointments = async () => {
         try {
             setLoading(true);
+            const passkey = localStorage.getItem('adminPasskey');
+            if (!passkey) {
+                // PasskeyModal will show up
+                setLoading(false);
+                return;
+            }
             const data = await appointmentService.getAppointments(currentPage, 10);
             setAppointments(data.appointments);
             setTotalPages(data.pagination.pages);
@@ -67,9 +106,22 @@ const Appointments = () => {
             fetchAppointments();
         } catch (error) {
             console.error(error);
-            alert('Failed to schedule appointment');
+            // alert('Failed to schedule appointment'); 
         } finally {
             setActionLoading(false);
+        }
+    };
+
+    const handleRequestConfirmation = async (appointment) => {
+        try {
+            if (window.confirm(`Request confirmation from Dr. ${appointment.primaryPhysician}?`)) {
+                await appointmentService.adminRequestConfirmation(appointment._id);
+                fetchAppointments(); // Refresh
+                // Use a toast here if available, e.g., toast.success('Request sent to doctor');
+            }
+        } catch (error) {
+            console.error('Error requesting confirmation:', error);
+            alert('Failed to send request');
         }
     };
 
@@ -81,7 +133,7 @@ const Appointments = () => {
             fetchAppointments();
         } catch (error) {
             console.error(error);
-            alert('Failed to cancel appointment');
+            // alert('Failed to cancel appointment');
         } finally {
             setActionLoading(false);
         }
@@ -89,7 +141,9 @@ const Appointments = () => {
 
     return (
         <div className="space-y-6 animate-fade-in">
+            <PasskeyModal />
             <div className="flex justify-between items-center">
+
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Appointment Management</h1>
                     <p className="text-slate-500">View and manage all appointments</p>
@@ -98,7 +152,7 @@ const Appointments = () => {
                     <Button onClick={fetchAppointments} variant="outline" className="flex items-center gap-2">
                         <RefreshCw size={18} /> Refresh
                     </Button>
-                    <button className="btn-gradient px-4 py-2 rounded-lg">New Appointment</button>
+                    <button onClick={() => { reset(); setShowCreateModal(true); }} className="btn-gradient px-4 py-2 rounded-lg">New Appointment</button>
                 </div>
             </div>
 
@@ -112,6 +166,7 @@ const Appointments = () => {
                             onSchedule={handleSchedule}
                             onCancel={handleCancel}
                             onView={handleView}
+                            onRequestConfirmation={handleRequestConfirmation}
                         />
                         {totalPages > 1 && (
                             <div className="flex justify-center mt-6 gap-2">
@@ -138,7 +193,28 @@ const Appointments = () => {
                 )}
             </div>
 
-            {/* Modals reused from Dashboard */}
+            {/* Create Appointment Modal */}
+            <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="New Appointment">
+                <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4">
+                    <FormField label="Patient ID" name="patientId" type="text" placeholder="User Object ID" register={register} error={errors.patientId} required />
+                    {/* For a real app, we would use a patient search/select here */}
+
+                    <FormField label="Primary Physician" name="primaryPhysician" type="text" placeholder="Dr. Name" register={register} error={errors.primaryPhysician} required />
+
+                    <FormField label="Schedule Date & Time" name="schedule" type="datetime-local" register={register} error={errors.schedule} required />
+
+                    <FormField label="Reason" name="reason" type="text" placeholder="Reason for visit" register={register} error={errors.reason} required />
+
+                    <FormField label="Notes" name="note" type="textarea" register={register} error={errors.note} />
+
+                    <div className="flex gap-3 mt-4">
+                        <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)} className="flex-1">Cancel</Button>
+                        <Button type="submit" variant="primary" disabled={actionLoading} className="flex-1">Create Appointment</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Schedule Modal (Reused) */}
             <Modal isOpen={showScheduleModal} onClose={() => setShowScheduleModal(false)} title="Schedule Appointment">
                 <form onSubmit={handleSubmit(onScheduleSubmit)} className="space-y-4">
                     <FormField label="Schedule Date & Time" name="schedule" type="datetime-local" register={register} error={errors.schedule} required />

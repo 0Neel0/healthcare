@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Lock, Shield, Stethoscope } from 'lucide-react';
+import { User, Mail, Lock, Shield, Stethoscope, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Header from '../components/layout/Header';
+import StickyHeader from '../components/layout/StickyHeader';
 import Footer from '../components/layout/Footer';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Logo from '../components/ui/Logo';
 import patientService from '../services/patientService';
 import authService from '../services/authService';
+import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 
 const Register = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
+        phone: '',
         password: '',
         confirmPassword: '',
         role: 'patient' // Default role
@@ -32,19 +34,41 @@ const Register = () => {
         setLoading(true);
 
         if (formData.password !== formData.confirmPassword) {
-            setError("Passwords don't match");
+            const msg = "Passwords don't match";
+            setError(msg);
+            toast.error(msg);
+            setLoading(false);
+            return;
+        }
+
+        // Email Validation
+        const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+        if (!emailRegex.test(formData.email)) {
+            const msg = "Please enter a valid email address.";
+            setError(msg);
+            toast.error(msg);
+            setLoading(false);
+            return;
+        }
+
+        // Standard Strong Password Regex: Min 8 chars, 1 Upper, 1 Lower, 1 Number, 1 Special
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(formData.password)) {
+            const msg = "Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character.";
+            setError(msg);
+            toast.error(msg);
             setLoading(false);
             return;
         }
 
         try {
             if (formData.role === 'patient') {
-                // Register Patient (Minimal)
+                // Register Patient with required fields
                 await patientService.createPatient({
                     name: formData.name,
                     email: formData.email,
-                    password: formData.password,
-                    phone: '' // Optional at this stage
+                    phone: formData.phone,
+                    password: formData.password
                 });
                 toast.success('Registration successful! Please login to complete your profile.');
             } else {
@@ -69,9 +93,10 @@ const Register = () => {
 
     return (
         <div className="min-h-screen flex flex-col">
-            <Header />
-            <div className="container mx-auto px-4 py-12 flex items-center justify-center flex-grow">
-                <Card className="max-w-md w-full animate-scale-in">
+            <StickyHeader />
+            <div className="container mx-auto px-4 py-16 md:py-24 flex items-center justify-center flex-grow">
+                <Card className="max-w-md w-full animate-scale-in relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-medical"></div>
                     <div className="text-center mb-8">
                         <div className="flex justify-center mb-6">
                             <Logo className="w-16 h-16" textClassName="text-4xl" />
@@ -95,8 +120,8 @@ const Register = () => {
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: 'patient' })}
                                     className={`p-3 rounded-xl border flex flex-col items-center justify-center transition-all ${formData.role === 'patient'
-                                            ? 'bg-brand-50 border-brand-500 text-brand-700 ring-1 ring-brand-500'
-                                            : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                                        ? 'bg-medical-blue-50 border-medical-blue-500 text-medical-blue-700 ring-2 ring-medical-blue-500'
+                                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                                         }`}
                                 >
                                     <User size={20} className="mb-1" />
@@ -106,8 +131,8 @@ const Register = () => {
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: 'doctor' })}
                                     className={`p-3 rounded-xl border flex flex-col items-center justify-center transition-all ${formData.role === 'doctor'
-                                            ? 'bg-brand-50 border-brand-500 text-brand-700 ring-1 ring-brand-500'
-                                            : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                                        ? 'bg-health-green-50 border-health-green-500 text-health-green-700 ring-2 ring-health-green-500'
+                                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                                         }`}
                                 >
                                     <Stethoscope size={20} className="mb-1" />
@@ -117,8 +142,8 @@ const Register = () => {
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: 'admin' })}
                                     className={`p-3 rounded-xl border flex flex-col items-center justify-center transition-all ${formData.role === 'admin'
-                                            ? 'bg-brand-50 border-brand-500 text-brand-700 ring-1 ring-brand-500'
-                                            : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                                        ? 'bg-demo-orange-50 border-demo-orange-500 text-demo-orange-700 ring-2 ring-demo-orange-500'
+                                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                                         }`}
                                 >
                                     <Shield size={20} className="mb-1" />
@@ -159,6 +184,21 @@ const Register = () => {
 
                         <div>
                             <label className="label-modern flex items-center gap-2">
+                                <Phone size={18} /> Phone Number
+                            </label>
+                            <input
+                                type="tel"
+                                name="phone"
+                                className="input-modern"
+                                placeholder="1234567890"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="label-modern flex items-center gap-2">
                                 <Lock size={18} /> Password
                             </label>
                             <input
@@ -170,6 +210,39 @@ const Register = () => {
                                 onChange={handleChange}
                                 required
                             />
+                            {formData.password && (
+                                <div className="mt-2 space-y-2 animate-fade-in">
+                                    <div className="flex gap-1 h-1.5">
+                                        {[1, 2, 3, 4, 5].map((level) => {
+                                            const strength = [
+                                                formData.password.length >= 8,
+                                                /[A-Z]/.test(formData.password),
+                                                /[a-z]/.test(formData.password),
+                                                /\d/.test(formData.password),
+                                                /[@$!%*?&]/.test(formData.password)
+                                            ].filter(Boolean).length;
+
+                                            let color = 'bg-gray-200';
+                                            if (strength >= level) {
+                                                if (strength <= 2) color = 'bg-red-500';
+                                                else if (strength <= 4) color = 'bg-yellow-500';
+                                                else color = 'bg-green-500';
+                                            }
+
+                                            return (
+                                                <div key={level} className={`flex-1 rounded-full ${color} transition-all duration-300`} />
+                                            );
+                                        })}
+                                    </div>
+                                    <ul className="text-xs space-y-1 text-gray-500">
+                                        <li className={formData.password.length >= 8 ? 'text-green-600' : ''}>• At least 8 characters</li>
+                                        <li className={/[A-Z]/.test(formData.password) ? 'text-green-600' : ''}>• One uppercase letter</li>
+                                        <li className={/[a-z]/.test(formData.password) ? 'text-green-600' : ''}>• One lowercase letter</li>
+                                        <li className={/\d/.test(formData.password) ? 'text-green-600' : ''}>• One number</li>
+                                        <li className={/[@$!%*?&]/.test(formData.password) ? 'text-green-600' : ''}>• One special char (@$!%*?&)</li>
+                                    </ul>
+                                </div>
+                            )}
                         </div>
 
                         <div>
@@ -187,14 +260,26 @@ const Register = () => {
                             />
                         </div>
 
-                        <Button type="submit" variant="primary" className="w-full" disabled={loading}>
+                        <Button type="submit" variant="medical" className="w-full" disabled={loading}>
                             {loading ? 'Creating Account...' : 'Register'}
                         </Button>
                     </form>
 
+                    <div className="mt-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-gray-300"></span>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="px-2 bg-white text-gray-500">Or sign up with</span>
+                            </div>
+                        </div>
+                        <GoogleLoginButton text="Sign up with Google" />
+                    </div>
+
                     <div className="mt-6 text-center text-sm text-gray-500">
                         Already have an account? {' '}
-                        <Link to="/login" className="text-brand-600 font-bold hover:underline">
+                        <Link to="/login" className="text-medical-blue-600 font-bold hover:underline">
                             Login here
                         </Link>
                     </div>

@@ -2,19 +2,33 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Calendar, Shield, LogOut, LogIn, LayoutDashboard } from 'lucide-react';
 import Logo from '../ui/Logo';
+import toast from 'react-hot-toast';
 
 const Header = () => {
     const navigate = useNavigate();
     const isLoggedIn = !!localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const role = localStorage.getItem('role');
 
     const handleLogout = () => {
-        if (window.confirm('Are you sure you want to logout?')) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            localStorage.removeItem('role');
-            navigate('/login');
-        }
+        // Clear all auth data
+        localStorage.clear(); // Clear everything to be safe
+
+        // Show success message
+        toast.success('Logged out successfully!');
+
+        // Small delay to show toast, then navigate
+        setTimeout(() => {
+            navigate('/login', { replace: true });
+        }, 100);
+    };
+
+    // Get dashboard URL based on role
+    const getDashboardUrl = () => {
+        if (role === 'patient') return '/patient/dashboard';
+        if (role === 'admin' || user.role === 'admin') return '/admin';
+        if (role === 'doctor' || user.role === 'doctor') return '/doctor/dashboard';
+        return '/patient/dashboard'; // fallback
     };
 
     return (
@@ -29,18 +43,18 @@ const Header = () => {
                         {isLoggedIn ? (
                             <>
                                 <span className="text-slate-500 text-sm font-medium">
-                                    Hello, <span className="text-brand-600 font-bold">{user.name}</span>
+                                    Hello, <span className="text-[#0052CC] font-bold">{user.name}</span>
                                 </span>
                                 <Link
-                                    to="/patient/dashboard"
-                                    className="flex items-center space-x-2 text-slate-600 hover:text-brand-600 transition-colors font-medium"
+                                    to={getDashboardUrl()}
+                                    className="flex items-center space-x-2 text-slate-600 hover:text-[#0052CC] transition-colors font-medium"
                                 >
                                     <LayoutDashboard className="w-5 h-5" />
                                     <span>Dashboard</span>
                                 </Link>
                                 <Link
                                     to="/book-appointment"
-                                    className="flex items-center space-x-2 text-slate-600 hover:text-brand-600 transition-colors font-medium"
+                                    className="flex items-center space-x-2 text-slate-600 hover:text-[#0052CC] transition-colors font-medium"
                                 >
                                     <Calendar className="w-5 h-5" />
                                     <span>Book Appointment</span>
@@ -57,24 +71,17 @@ const Header = () => {
                             <>
                                 <Link
                                     to="/login"
-                                    className="flex items-center space-x-2 text-slate-600 hover:text-brand-600 transition-colors font-medium"
+                                    className="flex items-center space-x-2 text-slate-600 hover:text-[#0052CC] transition-colors font-medium"
                                 >
                                     <LogIn className="w-5 h-5" />
                                     <span>Login</span>
                                 </Link>
                                 <Link
                                     to="/register"
-                                    className="flex items-center space-x-2 text-slate-600 hover:text-brand-600 transition-colors font-medium"
+                                    className="flex items-center space-x-2 text-slate-600 hover:text-[#0052CC] transition-colors font-medium"
                                 >
                                     <User className="w-5 h-5" />
                                     <span>Register</span>
-                                </Link>
-                                <Link
-                                    to="/admin"
-                                    className="flex items-center space-x-2 px-4 py-2 btn-gradient rounded-lg font-medium"
-                                >
-                                    <Shield className="w-5 h-5" />
-                                    <span>Admin</span>
                                 </Link>
                             </>
                         )}
@@ -92,6 +99,7 @@ const Header = () => {
                                 {isLoggedIn ? (
                                     <>
                                         <li><span className="font-bold text-brand-600">{user.name}</span></li>
+                                        <li><Link to={getDashboardUrl()}>Dashboard</Link></li>
                                         <li><Link to="/book-appointment">Book Appointment</Link></li>
                                         <li><button onClick={handleLogout} className="text-red-500">Logout</button></li>
                                     </>
@@ -99,7 +107,6 @@ const Header = () => {
                                     <>
                                         <li><Link to="/login">Login</Link></li>
                                         <li><Link to="/register">Register</Link></li>
-                                        <li><Link to="/admin">Admin Portal</Link></li>
                                     </>
                                 )}
                             </ul>

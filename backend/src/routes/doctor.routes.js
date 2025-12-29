@@ -11,4 +11,8 @@ doctorRoutes.get("/:id", auth, doctorController.getDoctor);
 doctorRoutes.put("/:id", auth, adminOnly, doctorController.updateDoctor);
 doctorRoutes.delete("/:id", auth, adminOnly, doctorController.deleteDoctor);
 
+// Availability and stats routes
+doctorRoutes.put("/:name/availability", auth, doctorController.updateAvailability);
+doctorRoutes.get("/:name/stats", auth, doctorController.getStats);
+
 export default doctorRoutes;

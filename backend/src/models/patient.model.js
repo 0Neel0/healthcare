@@ -2,32 +2,34 @@ import mongoose from "mongoose";
 
 
 const PatientSchema = new mongoose.Schema({
-    // Basic Information
+    // Basic Information - Essential fields (required for registration)
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     phone: { type: String, required: true },
-    birthDate: { type: Date, required: true },
-    gender: { type: String, enum: ['Male', 'Female', 'Other'], required: true },
-    address: { type: String, required: true },
     password: { type: String, required: true }, // Added for Auth
+
+    // Optional Basic Information (can be added during profile completion)
+    birthDate: { type: Date },
+    gender: { type: String, enum: ['Male', 'Female', 'Other'] },
+    address: { type: String },
     occupation: { type: String },
 
-    // Emergency Contact
-    emergencyContactName: { type: String, required: true },
-    emergencyContactNumber: { type: String, required: true },
+    // Emergency Contact (optional - can be added during profile completion)
+    emergencyContactName: { type: String },
+    emergencyContactNumber: { type: String },
 
-    // Medical Information
-    primaryPhysician: { type: String, required: true },
+    // Medical Information (optional)
+    primaryPhysician: { type: String },
     allergies: { type: String },
     currentMedication: { type: String },
     familyMedicalHistory: { type: String },
     pastMedicalHistory: { type: String },
 
-    // Insurance Information
-    insuranceProvider: { type: String, required: true },
-    insurancePolicyNumber: { type: String, required: true },
+    // Insurance Information (optional)
+    insuranceProvider: { type: String },
+    insurancePolicyNumber: { type: String },
 
-    // Identification
+    // Identification (optional)
     identificationType: { type: String },
     identificationNumber: { type: String },
     identificationDocumentId: { type: String },

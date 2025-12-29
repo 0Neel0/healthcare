@@ -30,63 +30,76 @@ import MyProfile from './pages/patient/MyProfile';
 // Placeholder for Profile Completion - I will need to create this file next
 import PatientProfileCompletion from './pages/patient/PatientProfileCompletion';
 
+// Doctor Dashboard
+import DoctorDashboard from './pages/doctor/DoctorDashboard';
+
 import { Toaster } from 'react-hot-toast';
+import { SocketProvider } from './context/SocketContext';
 
 function App() {
   return (
-    <Router>
-      <Toaster position="top-center" reverseOrder={false} />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <SocketProvider>
+      <Router>
+        <Toaster position="top-right" reverseOrder={false} />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        {/* Protected User Routes */}
-        <Route path="/book-appointment" element={
-          <ProtectedRoute>
-            <AppointmentBooking />
-          </ProtectedRoute>
-        } />
-        <Route path="/appointment/:id" element={
-          <ProtectedRoute>
-            <AppointmentSuccess />
-          </ProtectedRoute>
-        } />
+          {/* Protected User Routes */}
+          <Route path="/book-appointment" element={
+            <ProtectedRoute>
+              <AppointmentBooking />
+            </ProtectedRoute>
+          } />
+          <Route path="/appointment/:id" element={
+            <ProtectedRoute>
+              <AppointmentSuccess />
+            </ProtectedRoute>
+          } />
 
-        {/* Patient Portal */}
-        <Route path="/patient" element={
-          <ProtectedRoute>
-            <PatientLayout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<Navigate to="/patient/dashboard" replace />} />
-          <Route path="dashboard" element={<PatientDashboard />} />
-          <Route path="complete-profile" element={<PatientProfileCompletion />} />
-          <Route path="appointments" element={<MyAppointments />} />
-          <Route path="emr" element={<MyMedicalRecords />} />
-          <Route path="lab" element={<MyLabReports />} />
-          <Route path="billing" element={<MyBilling />} />
-          <Route path="profile" element={<MyProfile />} />
-        </Route>
+          {/* Patient Portal */}
+          <Route path="/patient" element={
+            <ProtectedRoute>
+              <PatientLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/patient/dashboard" replace />} />
+            <Route path="dashboard" element={<PatientDashboard />} />
+            <Route path="complete-profile" element={<PatientProfileCompletion />} />
+            <Route path="appointments" element={<MyAppointments />} />
+            <Route path="emr" element={<MyMedicalRecords />} />
+            <Route path="lab" element={<MyLabReports />} />
+            <Route path="billing" element={<MyBilling />} />
+            <Route path="profile" element={<MyProfile />} />
+          </Route>
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<DashboardLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="patients" element={<Patients />} />
-          <Route path="doctors" element={<Doctors />} />
-          <Route path="appointments" element={<Appointments />} />
-          <Route path="inventory" element={<Inventory />} />
-          <Route path="billing" element={<Billing />} />
-          <Route path="staff" element={<Staff />} />
-          <Route path="wards" element={<Wards />} />
-          <Route path="lab" element={<Lab />} />
-          <Route path="emr" element={<EMR />} />
-          <Route path="reports" element={<Reports />} />
-          {/* Redirect legacy route if needed or keep existing pages mapped */}
-          <Route path="dashboard" element={<AdminDashboard />} />
-        </Route>
-      </Routes>
-    </Router>
+          {/* Doctor Dashboard */}
+          <Route path="/doctor/dashboard" element={
+            <ProtectedRoute>
+              <DoctorDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<DashboardLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="patients" element={<Patients />} />
+            <Route path="doctors" element={<Doctors />} />
+            <Route path="appointments" element={<Appointments />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="billing" element={<Billing />} />
+            <Route path="staff" element={<Staff />} />
+            <Route path="wards" element={<Wards />} />
+            <Route path="lab" element={<Lab />} />
+            <Route path="emr" element={<EMR />} />
+            <Route path="reports" element={<Reports />} />
+            {/* Redirect legacy route if needed or keep existing pages mapped */}
+            <Route path="dashboard" element={<AdminDashboard />} />
+          </Route>
+        </Routes>
+      </Router>
+    </SocketProvider>
   );
 }
 

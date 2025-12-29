@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/user';
+const API_URL = 'http://localhost:3000/api/user';
 
 const register = async (userData) => {
     const response = await axios.post(`${API_URL}/register`, userData);
@@ -11,6 +11,16 @@ const login = async (credentials) => {
     // credentials: { email, password }
     // Backend userController.login expects { email, password }
     const response = await axios.post(`${API_URL}/login`, credentials);
+    if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('role', response.data.user.role);
+    }
+    return response.data;
+};
+
+const googleLogin = async (credential) => {
+    const response = await axios.post(`${API_URL}/google`, { credential });
     if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -34,7 +44,8 @@ const authService = {
     register,
     login,
     logout,
-    getCurrentUser
+    getCurrentUser,
+    googleLogin
 };
 
 export default authService;

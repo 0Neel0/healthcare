@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { UserPlus, CheckCircle2, ArrowLeft, ArrowRight } from 'lucide-react';
-import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import Button from '../../components/ui/Button';
 import FormField from '../../components/forms/FormField';
@@ -11,7 +10,7 @@ import patientService from '../../services/patientService';
 
 const PatientProfileCompletion = () => {
     const navigate = useNavigate();
-    const { register, handleSubmit, formState: { errors }, setValue } = useForm();
+    const { register, handleSubmit, formState: { errors }, setValue, control } = useForm();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -83,7 +82,7 @@ const PatientProfileCompletion = () => {
                         <FormField label="Full Name" name="name" register={register} error={errors.name} required />
                         <FormField label="Email" name="email" type="email" register={register} error={errors.email} disabled />
                         <FormField label="Phone" name="phone" type="tel" register={register} error={errors.phone} required />
-                        <FormField label="Date of Birth" name="birthDate" type="date" register={register} error={errors.birthDate} required />
+                        <FormField label="Date of Birth" name="birthDate" type="datepicker" control={control} error={errors.birthDate} required />
                         <FormField
                             label="Gender"
                             name="gender"
@@ -142,8 +141,6 @@ const PatientProfileCompletion = () => {
 
     return (
         <div className="min-h-screen flex flex-col">
-            <Header />
-
             <div className="container mx-auto px-4 py-12 max-w-3xl flex-grow">
                 <div className="glass-effect rounded-3xl p-8 animate-scale-in">
                     {/* Header */}
