@@ -40,6 +40,10 @@ const PatientSchema = new mongoose.Schema({
     disclosureConsent: { type: Boolean, default: false },
     privacyConsent: { type: Boolean, default: false },
 
+    // Profile Customization
+    description: { type: String }, // User bio
+    profilePicture: { type: String }, // Path/URL to image
+
     // Legacy field for compatibility
     medicalHistory: [String],
 

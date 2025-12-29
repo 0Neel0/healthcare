@@ -21,6 +21,7 @@ const AppointmentBooking = () => {
     const [patient, setPatient] = useState(null);
     const [searchEmail, setSearchEmail] = useState('');
     const [doctors, setDoctors] = useState([]);
+    const [doctorObjects, setDoctorObjects] = useState([]); // Store full doctor objects
     const [fetchingDoctors, setFetchingDoctors] = useState(true);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [bookedAppointment, setBookedAppointment] = useState(null);
@@ -43,6 +44,7 @@ const AppointmentBooking = () => {
         try {
             setFetchingDoctors(true);
             const response = await api.get('/user/doctors');
+            setDoctorObjects(response.data); // Store full objects
             const formattedDoctors = response.data.map(doctor => `Dr. ${doctor.name}`);
             setDoctors(formattedDoctors);
         } catch (err) {
@@ -110,10 +112,14 @@ const AppointmentBooking = () => {
                 return;
             }
 
+            // Find the selected doctor's ID
+            const selectedDoctor = doctorObjects.find(doc => `Dr. ${doc.name}` === data.primaryPhysician);
+
             const appointmentData = {
                 patientId: patient._id,
                 userId: patient._id,
                 primaryPhysician: data.primaryPhysician,
+                doctorId: selectedDoctor?._id, // Send explicit ID
                 schedule: new Date(data.schedule).toISOString(),
                 reason: data.reason,
                 note: data.note || '',

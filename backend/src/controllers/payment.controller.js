@@ -2,8 +2,8 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { Appointment } from '../models/appointment.model.js';
 import { Doctor } from '../models/doctor.model.js';
-import { User } from '../models/user.model.js'; // Import User for fallback
-import { io } from '../../server.js';
+import { User } from '../models/user.model.js';
+import { Billing } from '../models/billing.model.js';
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -151,9 +151,28 @@ const verifyPayment = async (req, res, next) => {
                 updatedAt: new Date()
             }, { new: true });
 
+            // Create a Billing Record for this transaction so it shows in history
+            const billingRecord = new Billing({
+                patientId: appointment.patient,
+                appointmentId: appointment._id,
+                services: [{
+                    name: 'Consultation Fee',
+                    cost: appointment.consultationFee || 0,
+                    quantity: 1
+                }],
+                totalAmount: appointment.consultationFee || 0,
+                paymentStatus: 'Paid',
+                paymentMethod: 'Online',
+                transactionId: razorpay_payment_id,
+                notes: 'Paid via Online Appointment Booking'
+            });
+            await billingRecord.save();
+
             // Notify Doctor and Admin
-            io.to(`doctor_${appointment.primaryPhysician}`).emit('appointment_paid', appointment);
-            io.to('admin_room').emit('appointment_paid', appointment);
+            if (req.io) {
+                req.io.to(`doctor_${appointment.primaryPhysician}`).emit('appointment_paid', appointment);
+                req.io.to('admin_room').emit('appointment_paid', appointment);
+            }
 
             res.json({ success: true, message: "Payment verified successfully" });
         } else {

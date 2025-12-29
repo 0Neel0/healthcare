@@ -30,7 +30,7 @@ const MyAppointments = () => {
         setLoading(false);
     };
 
-    const socket = useSocket();
+    const { socket } = useSocket();
 
     useEffect(() => {
         loadData();

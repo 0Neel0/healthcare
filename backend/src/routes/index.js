@@ -15,6 +15,9 @@ import prescriptionRoutes from "./prescription.routes.js"
 
 import paymentRoutes from "./payment.routes.js"
 
+import messageRoutes from "./message.routes.js";
+import patientDocumentRoutes from "./patientDocument.routes.js";
+
 routes.use("/user", userRoutes);
 routes.use("/doctors", doctorRoutes);
 routes.use("/patients", patientRoutes);
@@ -25,8 +28,10 @@ routes.use("/emr", medicalRecordRoutes);
 routes.use("/lab", labRoutes);
 routes.use("/wards", wardRoutes);
 routes.use("/staff", staffRoutes);
-routes.use("/reports", reportRoutes);
 routes.use("/prescriptions", prescriptionRoutes);
 routes.use("/payment", paymentRoutes);
+routes.use("/messages", messageRoutes);
+routes.use("/patient-documents", patientDocumentRoutes);
+routes.use("/reports", reportRoutes);
 
 export default routes;

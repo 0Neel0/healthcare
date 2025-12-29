@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, FileText, Activity, Clock, Plus, ChevronRight, User, CreditCard, Bell } from 'lucide-react';
+import { Calendar, FileText, Activity, Clock, Plus, ChevronRight, User, CreditCard, Bell, MessageSquare } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import appointmentService from '../../services/appointmentService';
 import toast from 'react-hot-toast';
+import ChatWindow from '../../components/chat/ChatWindow';
 
 const PatientDashboard = () => {
     const navigate = useNavigate();
@@ -11,6 +12,7 @@ const PatientDashboard = () => {
 
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [chatDoctor, setChatDoctor] = useState(null);
     const [stats, setStats] = useState({
         upcoming: 0,
         past: 0,
@@ -191,6 +193,26 @@ const PatientDashboard = () => {
                                                 })}
                                             </p>
                                         </div>
+                                        {/* Chat Button (Always show for non-cancelled to debug) */}
+                                        {apt.status !== 'cancelled' && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (apt.doctor) {
+                                                        setChatDoctor({ id: apt.doctor._id, name: apt.primaryPhysician });
+                                                    } else {
+                                                        toast.error(`Chat unavailable for this legacy appointment. Please book a new appointment to enable chat.`);
+                                                    }
+                                                }}
+                                                className={`p-2 rounded-full transition-colors mr-2 ${apt.doctor
+                                                    ? 'text-blue-600 hover:bg-blue-50'
+                                                    : 'text-slate-400 hover:bg-slate-100 cursor-not-allowed'
+                                                    }`}
+                                                title={apt.doctor ? "Chat with Doctor" : "Doctor not available for chat"}
+                                            >
+                                                <MessageSquare size={18} />
+                                            </button>
+                                        )}
                                         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${apt.status === 'scheduled'
                                             ? 'bg-[#E3FCEF] text-[#00875A]'
                                             : 'bg-[#FFF0B3] text-[#FF991F]'
@@ -259,6 +281,15 @@ const PatientDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Chat Window */}
+            {chatDoctor && (
+                <ChatWindow
+                    receiverId={chatDoctor.id}
+                    receiverName={chatDoctor.name}
+                    onClose={() => setChatDoctor(null)}
+                />
+            )}
         </div>
     );
 };

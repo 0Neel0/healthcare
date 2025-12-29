@@ -19,6 +19,7 @@ import Doctors from './pages/admin/Doctors';
 import Appointments from './pages/admin/Appointments';
 
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 import PatientLayout from './components/layout/PatientLayout';
 import PatientDashboard from './pages/patient/PatientDashboard';
@@ -35,11 +36,13 @@ import DoctorDashboard from './pages/doctor/DoctorDashboard';
 
 import { Toaster } from 'react-hot-toast';
 import { SocketProvider } from './context/SocketContext';
+import GlobalCallListener from './components/chat/GlobalCallListener';
 
 function App() {
   return (
     <SocketProvider>
       <Router>
+        <GlobalCallListener />
         <Toaster position="top-right" reverseOrder={false} />
         <Routes>
           <Route path="/" element={<Home />} />
@@ -77,12 +80,15 @@ function App() {
           {/* Doctor Dashboard */}
           <Route path="/doctor/dashboard" element={
             <ProtectedRoute>
-              <DoctorDashboard />
+              <ErrorBoundary>
+                <DoctorDashboard />
+              </ErrorBoundary>
             </ProtectedRoute>
           } />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<DashboardLayout />}>
+// ... (rest of the file)
             <Route index element={<AdminDashboard />} />
             <Route path="patients" element={<Patients />} />
             <Route path="doctors" element={<Doctors />} />

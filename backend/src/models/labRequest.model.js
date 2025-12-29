@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const LabRequestSchema = new mongoose.Schema({
     patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
-    doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true },
+    doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     testId: { type: mongoose.Schema.Types.ObjectId, ref: 'LabTest', required: true },
 
     status: {

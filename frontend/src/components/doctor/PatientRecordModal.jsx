@@ -4,12 +4,14 @@ import { User, Calendar, FileText, AlertCircle, Heart, Pill, Activity } from 'lu
 import patientService from '../../services/patientService';
 import appointmentService from '../../services/appointmentService';
 import prescriptionService from '../../services/prescriptionService';
+import { patientDocumentService } from '../../services/patientDocumentService';
 import toast from 'react-hot-toast';
 
 const PatientRecordModal = ({ isOpen, onClose, patientId }) => {
     const [patient, setPatient] = useState(null);
     const [appointments, setAppointments] = useState([]);
     const [prescriptions, setPrescriptions] = useState([]);
+    const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -21,15 +23,17 @@ const PatientRecordModal = ({ isOpen, onClose, patientId }) => {
     const fetchPatientData = async () => {
         try {
             setLoading(true);
-            const [patientData, appointmentsData, prescriptionsData] = await Promise.all([
+            const [patientData, appointmentsData, prescriptionsData, documentsData] = await Promise.all([
                 patientService.getPatient(patientId),
                 appointmentService.getPatientAppointments(patientId),
-                prescriptionService.getPatientPrescriptions(patientId)
+                prescriptionService.getPatientPrescriptions(patientId),
+                patientDocumentService.getDocumentsByPatientId(patientId)
             ]);
 
             setPatient(patientData);
             setAppointments(appointmentsData);
             setPrescriptions(prescriptionsData.data || []);
+            setDocuments(documentsData || []);
         } catch (error) {
             console.error('Error fetching patient data:', error);
             toast.error('Failed to load patient records');
@@ -125,8 +129,8 @@ const PatientRecordModal = ({ isOpen, onClose, patientId }) => {
                                                         {new Date(apt.schedule).toLocaleDateString()}
                                                     </p>
                                                     <span className={`text-xs px-2 py-0.5 rounded ${apt.status === 'completed' ? 'bg-[#E3FCEF] text-[#00875A]' :
-                                                            apt.status === 'cancelled' ? 'bg-[#FFEBE6] text-[#DE350B]' :
-                                                                'bg-[#DEEBFF] text-[#0052CC]'
+                                                        apt.status === 'cancelled' ? 'bg-[#FFEBE6] text-[#DE350B]' :
+                                                            'bg-[#DEEBFF] text-[#0052CC]'
                                                         }`}>
                                                         {apt.status}
                                                     </span>
@@ -171,6 +175,43 @@ const PatientRecordModal = ({ isOpen, onClose, patientId }) => {
                                 </div>
                             ) : (
                                 <p className="text-sm text-[#7A869A] italic">No prescriptions found</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Uploaded Documents */}
+                    <div>
+                        <h4 className="text-sm font-bold text-[#253858] uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <FileText size={16} className="text-[#0052CC]" />
+                            Uploaded Documents ({documents.length})
+                        </h4>
+                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                            {documents.length > 0 ? (
+                                <div className="space-y-2">
+                                    {documents.map((doc) => (
+                                        <div key={doc._id} className="bg-white border border-[#DFE1E6] rounded-lg p-3 flex items-center justify-between hover:bg-[#F4F5F7] transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-[#DEEBFF] text-[#0052CC] rounded-lg">
+                                                    <FileText size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-[#253858] text-sm">{doc.title}</p>
+                                                    <p className="text-xs text-[#7A869A]">{new Date(doc.uploadDate).toLocaleDateString()}</p>
+                                                </div>
+                                            </div>
+                                            <a
+                                                href={`http://localhost:4000${doc.fileUrl}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs font-semibold text-[#0052CC] hover:underline"
+                                            >
+                                                Download
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-[#7A869A] italic">No uploaded documents found</p>
                             )}
                         </div>
                     </div>

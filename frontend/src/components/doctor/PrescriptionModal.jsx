@@ -1,10 +1,11 @@
+import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import { Plus, X, Pill, FileText, Calendar } from 'lucide-react';
 import prescriptionService from '../../services/prescriptionService';
 import toast from 'react-hot-toast';
 import DatePicker from '../ui/DatePicker';
 
-const PrescriptionModal = ({ isOpen, onClose, appointment, doctorName }) => {
+const PrescriptionModal = ({ isOpen, onClose, appointment, patient, doctorName }) => {
     const [medications, setMedications] = useState([
         { medicineName: '', dosage: '', frequency: '', duration: '', instructions: '' }
     ]);
@@ -13,6 +14,8 @@ const PrescriptionModal = ({ isOpen, onClose, appointment, doctorName }) => {
     const [notes, setNotes] = useState('');
     const [followUpDate, setFollowUpDate] = useState(null);
     const [saving, setSaving] = useState(false);
+
+    const activePatient = appointment?.patient || patient;
 
     const addMedication = () => {
         setMedications([...medications, { medicineName: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
@@ -51,9 +54,9 @@ const PrescriptionModal = ({ isOpen, onClose, appointment, doctorName }) => {
             setSaving(true);
 
             const prescriptionData = {
-                patientId: appointment.patient._id,
+                patientId: activePatient._id,
                 doctorName,
-                appointmentId: appointment._id,
+                appointmentId: appointment?._id || null, // Optional
                 medications: validMedications,
                 diagnosis,
                 symptoms: symptoms.split(',').map(s => s.trim()).filter(s => s),
@@ -81,7 +84,7 @@ const PrescriptionModal = ({ isOpen, onClose, appointment, doctorName }) => {
         }
     };
 
-    if (!isOpen || !appointment) return null;
+    if (!isOpen || !activePatient) return null;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Write Prescription" size="lg">
@@ -89,9 +92,9 @@ const PrescriptionModal = ({ isOpen, onClose, appointment, doctorName }) => {
                 {/* Patient Info */}
                 <div className="bg-[#DEEBFF]/30 border border-[#B3D4FF] rounded-lg p-4">
                     <p className="text-sm text-[#7A869A]">Patient</p>
-                    <p className="text-lg font-bold text-[#253858]">{appointment.patient?.name}</p>
+                    <p className="text-lg font-bold text-[#253858]">{activePatient.name}</p>
                     <p className="text-xs text-[#7A869A] mt-1">
-                        {appointment.patient?.email} • {appointment.patient?.phone}
+                        {activePatient.email} • {activePatient.phone}
                     </p>
                 </div>
 

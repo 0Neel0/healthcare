@@ -4,6 +4,7 @@ const AppointmentSchema = new mongoose.Schema({
     patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
     userId: { type: String, required: true }, // Appwrite user ID for cross-reference
     primaryPhysician: { type: String, required: true }, // Doctor name
+    doctor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to Doctor User ID for Chat/Features
     schedule: { type: Date, required: true },
     reason: { type: String, required: true },
     note: { type: String },

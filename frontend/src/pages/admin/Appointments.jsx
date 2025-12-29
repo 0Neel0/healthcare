@@ -41,7 +41,7 @@ const Appointments = () => {
     };
 
     // Socket Listener
-    const socket = useSocket();
+    const { socket } = useSocket();
 
     useEffect(() => {
         if (!socket) return;

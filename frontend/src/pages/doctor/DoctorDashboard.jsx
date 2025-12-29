@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, CheckCircle, AlertCircle, DollarSign, Activity, Users, Bell, LogOut } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, AlertCircle, DollarSign, Activity, Users, Bell, LogOut, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import appointmentService from '../../services/appointmentService';
 import doctorService from '../../services/doctorService';
@@ -13,23 +13,25 @@ import Button from '../../components/ui/Button';
 import AvailabilityModal from '../../components/doctor/AvailabilityModal';
 import PatientRecordModal from '../../components/doctor/PatientRecordModal';
 import PrescriptionModal from '../../components/doctor/PrescriptionModal';
+import ChatWindow from '../../components/chat/ChatWindow';
 
 const DoctorDashboard = () => {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const doctorName = `Dr. ${user.name}`;
+    const doctorName = user.name ? `Dr. ${user.name}` : 'Doctor';
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState(null);
 
     // Modal & Action States
+    const [chatUser, setChatUser] = useState(null);
     const [availabilityModal, setAvailabilityModal] = useState(false);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, appointment: null });
     const [consultationFee, setConsultationFee] = useState(500);
     const [patientRecordModal, setPatientRecordModal] = useState({ isOpen: false, patientId: null });
-    const [prescriptionModal, setPrescriptionModal] = useState({ isOpen: false, appointment: null });
+    const [prescriptionModal, setPrescriptionModal] = useState({ isOpen: false, appointment: null, patient: null });
 
-    const socket = useSocket();
+    const { socket } = useSocket();
 
     useEffect(() => {
         fetchData();
@@ -52,22 +54,27 @@ const DoctorDashboard = () => {
         try {
             setLoading(true);
             const data = await appointmentService.getDoctorAppointments(doctorName);
-            setAppointments(data);
+            setAppointments(data || []);
 
             // Calculate pseudo-stats if API doesn't provide them all
             const today = new Date().toDateString();
-            const todayAppts = data.filter(a => new Date(a.schedule).toDateString() === today && a.status !== 'cancelled');
+            const todayAppts = (data || []).filter(a => {
+                try {
+                    return new Date(a.schedule).toDateString() === today && a.status !== 'cancelled';
+                } catch (e) { return false; }
+            });
 
             setStats({
                 todayCount: todayAppts.length,
-                pendingRequests: data.filter(a => a.status === 'pending_doctor').length,
+                pendingRequests: (data || []).filter(a => a.status === 'pending_doctor').length,
                 completedToday: todayAppts.filter(a => a.status === 'completed').length,
-                pendingPayments: data.filter(a => a.status === 'pending_payment').length,
-                totalEarnings: data.filter(a => a.paymentStatus === 'paid').reduce((acc, curr) => acc + (curr.consultationFee || 0), 0) * 0.5
+                pendingPayments: (data || []).filter(a => a.status === 'pending_payment').length,
+                totalEarnings: (data || []).filter(a => a.paymentStatus === 'paid').reduce((acc, curr) => acc + (curr.consultationFee || 0), 0) * 0.5
             });
         } catch (error) {
             console.error('Error fetching data:', error);
             toast.error('Failed to load dashboard data');
+            setAppointments([]); // Ensure appointments is an array even on error
         } finally {
             setLoading(false);
         }
@@ -103,24 +110,44 @@ const DoctorDashboard = () => {
         }
     };
 
+    const formatTimeSafe = (dateString) => {
+        try {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+            return 'Invalid Time';
+        }
+    };
+
+    const formatDateSafe = (dateString) => {
+        try {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString();
+        } catch (e) {
+            return 'Invalid Date';
+        }
+    };
+
     const pendingRequests = appointments.filter(a => a.status === 'pending_doctor');
     const todayAppointments = appointments.filter(a => {
-        const d = new Date(a.schedule);
-        return d.toDateString() === new Date().toDateString() && a.status !== 'cancelled' && a.status !== 'pending_doctor';
+        try {
+            const d = new Date(a.schedule);
+            return d.toDateString() === new Date().toDateString() && a.status !== 'cancelled' && a.status !== 'pending_doctor';
+        } catch (e) { return false; }
     }).sort((a, b) => new Date(a.schedule) - new Date(b.schedule));
 
     const columns = [
         {
             key: 'time',
             label: 'Time',
-            render: (_, row) => <span className="font-mono font-medium text-slate-700">{new Date(row.schedule).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            render: (_, row) => <span className="font-mono font-medium text-slate-700">{formatTimeSafe(row.schedule)}</span>
         },
         {
             key: 'patient',
             label: 'Patient',
             render: (_, row) => (
                 <div>
-                    <div className="font-medium text-slate-900">{row.patient?.name}</div>
+                    <div className="font-medium text-slate-900">{row.patient?.name || 'Unknown'}</div>
                     <div className="text-xs text-slate-500">{row.reason}</div>
                 </div>
             )
@@ -142,12 +169,17 @@ const DoctorDashboard = () => {
                 <div className="flex gap-2">
                     <button onClick={() => setPatientRecordModal({ isOpen: true, patientId: row.patient?._id })} className="btn-xs btn-outline">Record</button>
                     {row.status === 'scheduled' && (
-                        <button onClick={() => handleStatusUpdate(row._id, 'ongoing')} className="btn-xs btn-outline-primary">Start</button>
+                        <button onClick={() => handleStatusUpdate(row._id, 'ongoing')} className="btn-xs btn-primary-blue">Start</button>
                     )}
                     {row.status === 'ongoing' && (
                         <>
-                            <button onClick={() => setPrescriptionModal({ isOpen: true, appointment: row })} className="btn-xs btn-outline-secondary">Rx</button>
-                            <button onClick={() => handleStatusUpdate(row._id, 'completed')} className="btn-xs btn-primary">Complete</button>
+                            <button
+                                onClick={() => setPrescriptionModal({ isOpen: true, appointment: row })}
+                                className="px-3 py-1 bg-blue-600 text-white rounded-md text-xs font-bold hover:bg-blue-700 shadow-sm transition-colors"
+                            >
+                                Prescribe
+                            </button>
+                            <button onClick={() => handleStatusUpdate(row._id, 'completed')} className="btn-xs btn-success">Complete</button>
                         </>
                     )}
                 </div>
@@ -231,8 +263,8 @@ const DoctorDashboard = () => {
                                     <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">New Request</span>
                                 </div>
                                 <div className="text-sm text-slate-600">
-                                    <p className="flex items-center gap-2"><Calendar size={14} /> {new Date(req.schedule).toLocaleDateString()}</p>
-                                    <p className="flex items-center gap-2"><Clock size={14} /> {new Date(req.schedule).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                    <p className="flex items-center gap-2"><Calendar size={14} /> {formatDateSafe(req.schedule)}</p>
+                                    <p className="flex items-center gap-2"><Clock size={14} /> {formatTimeSafe(req.schedule)}</p>
                                     <p className="mt-2 text-slate-800 italic">"{req.reason}"</p>
                                 </div>
                                 <Button
@@ -278,7 +310,7 @@ const DoctorDashboard = () => {
                             {(() => {
                                 const uniquePatients = [];
                                 const seenIds = new Set();
-                                appointments.forEach(app => {
+                                (appointments || []).forEach(app => {
                                     if (app.patient && !seenIds.has(app.patient._id)) {
                                         seenIds.add(app.patient._id);
                                         uniquePatients.push({ ...app.patient, lastVisit: app.schedule });
@@ -294,14 +326,33 @@ const DoctorDashboard = () => {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-bold text-slate-900 truncate">{patient.name}</p>
-                                            <p className="text-xs text-slate-500">Last Visit: {new Date(patient.lastVisit).toLocaleDateString()}</p>
+                                            <div className="flex gap-2">
+                                                <p className="text-xs text-slate-500">Last Visit: {formatDateSafe(patient.lastVisit)}</p>
+                                            </div>
                                         </div>
-                                        <button
-                                            onClick={() => setPatientRecordModal({ isOpen: true, patientId: patient._id })}
-                                            className="btn-xs btn-ghost text-slate-400 hover:text-blue-600"
-                                        >
-                                            View
-                                        </button>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => setPrescriptionModal({ isOpen: true, patient: patient })}
+                                                className="px-3 py-1 bg-blue-600 text-white rounded-md text-xs font-bold hover:bg-blue-700 shadow-sm transition-colors"
+                                                title="Write Prescription"
+                                            >
+                                                Prescribe
+                                            </button>
+                                            <button
+                                                onClick={() => setChatUser({ id: patient._id, name: patient.name })}
+                                                className="btn-xs btn-ghost text-blue-600 hover:bg-blue-50"
+                                                title="Chat"
+                                            >
+                                                <MessageSquare size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setPatientRecordModal({ isOpen: true, patientId: patient._id })}
+                                                className="btn-xs btn-ghost text-slate-400 hover:text-blue-600"
+                                                title="Records"
+                                            >
+                                                View
+                                            </button>
+                                        </div>
                                     </div>
                                 ));
                             })()}
@@ -309,6 +360,15 @@ const DoctorDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Chat Window */}
+            {chatUser && (
+                <ChatWindow
+                    receiverId={chatUser.id}
+                    receiverName={chatUser.name}
+                    onClose={() => setChatUser(null)}
+                />
+            )}
 
             {/* Modals */}
             <AvailabilityModal
@@ -326,8 +386,9 @@ const DoctorDashboard = () => {
 
             <PrescriptionModal
                 isOpen={prescriptionModal.isOpen}
-                onClose={() => setPrescriptionModal({ isOpen: false, appointment: null })}
+                onClose={() => setPrescriptionModal({ isOpen: false, appointment: null, patient: null })}
                 appointment={prescriptionModal.appointment}
+                patient={prescriptionModal.patient}
                 doctorName={doctorName}
             />
 
@@ -335,7 +396,7 @@ const DoctorDashboard = () => {
                 <form onSubmit={handleConfirmRequest} className="space-y-4">
                     <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
                         <p><strong>Patient:</strong> {confirmModal.appointment?.patient?.name}</p>
-                        <p><strong>Time:</strong> {confirmModal.appointment && new Date(confirmModal.appointment.schedule).toLocaleString()}</p>
+                        <p><strong>Time:</strong> {confirmModal.appointment && formatTimeSafe(confirmModal.appointment.schedule)}</p>
                         <p><strong>Reason:</strong> {confirmModal.appointment?.reason}</p>
                     </div>
 

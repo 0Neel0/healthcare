@@ -29,7 +29,10 @@ export const patientService = {
 
     // Update patient
     updatePatient: async (id, patientData) => {
-        const response = await api.put(`/patients/${id}`, patientData);
+        const isFormData = patientData instanceof FormData;
+        const config = isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+
+        const response = await api.put(`/patients/${id}`, patientData, config);
         return response.data;
     },
 

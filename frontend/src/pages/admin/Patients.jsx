@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, User, Phone, MapPin, Calendar, FileText, ChevronRight } from 'lucide-react';
 import { patientService } from '../../services/patientService';
+import { patientDocumentService } from '../../services/patientDocumentService';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 
@@ -12,10 +13,27 @@ const Patients = () => {
 
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [uploadedDocs, setUploadedDocs] = useState([]);
 
     useEffect(() => {
         fetchPatients();
     }, []);
+
+    // Fetch documents when modal opens for a patient
+    useEffect(() => {
+        const fetchDocs = async () => {
+            if (selectedPatient && showModal) {
+                try {
+                    const docs = await patientDocumentService.getDocumentsByPatientId(selectedPatient._id);
+                    setUploadedDocs(docs);
+                } catch (err) {
+                    console.error("Failed to fetch documents", err);
+                    setUploadedDocs([]);
+                }
+            }
+        };
+        fetchDocs();
+    }, [selectedPatient, showModal]);
 
     const fetchPatients = async () => {
         try {
@@ -43,6 +61,7 @@ const Patients = () => {
 
     const handleView = (patient) => {
         setSelectedPatient(patient);
+        setUploadedDocs([]); // Clear previous
         setShowModal(true);
     };
 
@@ -224,6 +243,41 @@ const Patients = () => {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Uploaded Documents Section */}
+                        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                <FileText size={14} /> Uploaded Documents
+                            </h4>
+                            {uploadedDocs.length === 0 ? (
+                                <p className="text-sm text-slate-500 italic">No documents uploaded by patient.</p>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-3">
+                                    {uploadedDocs.map((doc) => (
+                                        <div key={doc._id} className="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                <div className="p-2 bg-slate-100 rounded-lg">
+                                                    <FileText size={16} className="text-blue-500" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-semibold text-slate-800 truncate">{doc.title}</p>
+                                                    <p className="text-[10px] text-slate-500">{new Date(doc.uploadDate).toLocaleDateString()}</p>
+                                                </div>
+                                            </div>
+                                            <a
+                                                href={`http://localhost:4000${doc.fileUrl}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-blue-600 transition-colors"
+                                                title="Download"
+                                            >
+                                                <ChevronRight size={16} />
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Emergency Contact */}

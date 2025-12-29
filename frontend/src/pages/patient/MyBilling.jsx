@@ -108,64 +108,64 @@ const MyBilling = () => {
         }
     };
 
+    const [activeTab, setActiveTab] = useState('unpaid');
+
+    const pendingBills = invoices.filter(inv => inv.paymentStatus === 'Pending');
+    const historyBills = invoices.filter(inv => inv.paymentStatus === 'Paid');
+
     return (
         <div className="space-y-6 animate-fade-in">
             <h1 className="text-2xl font-bold text-slate-900">My Billing & Payments</h1>
+
+            {/* Tabs */}
+            <div className="flex border-b border-slate-200">
+                <button
+                    onClick={() => setActiveTab('unpaid')}
+                    className={`px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'unpaid'
+                        ? 'border-b-2 border-brand-500 text-brand-600'
+                        : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    Unpaid Bills ({pendingBills.length})
+                </button>
+                <button
+                    onClick={() => setActiveTab('history')}
+                    className={`px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'history'
+                        ? 'border-b-2 border-brand-500 text-brand-600'
+                        : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    Payment History
+                </button>
+            </div>
 
             {loading ? (
                 <div className="flex justify-center p-12">
                     <div className="w-10 h-10 border-4 border-medical-blue-200 border-t-medical-blue-600 rounded-full animate-spin"></div>
                 </div>
-            ) : invoices.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                    <CreditCard className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500">No invoices found.</p>
-                </div>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
-                    {invoices.map((inv) => (
-                        <Card key={inv._id} className="border border-slate-200 relative overflow-hidden">
-                            {/* Status Strip */}
-                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${inv.paymentStatus === 'Paid' ? 'bg-green-500' : 'bg-red-500'}`} />
-
-                            <div className="flex flex-col md:flex-row justify-between items-center gap-4 pl-4">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-mono text-sm text-slate-400">#{inv._id.slice(-6).toUpperCase()}</span>
-                                        <span className="text-xs text-slate-500">{new Date(inv.createdAt).toLocaleDateString()}</span>
-                                    </div>
-                                    <div className="flex items-end gap-2">
-                                        <h3 className="text-2xl font-bold text-slate-900">₹{inv.totalAmount}</h3>
-                                        <span className={`text-sm font-medium px-2 py-0.5 rounded-full mb-1 ${inv.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                            }`}>
-                                            {inv.paymentStatus}
-                                        </span>
-                                    </div>
-                                    <div className="mt-2 text-sm text-slate-600">
-                                        {inv.services.map((s, i) => (
-                                            <span key={i} className="mr-2">• {s.name} (x{s.quantity})</span>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    {inv.paymentStatus === 'Pending' ? (
-                                        <Button
-                                            variant="primary"
-                                            onClick={() => { setSelectedInvoice(inv); setShowPayModal(true); }}
-                                            className="flex items-center gap-2"
-                                        >
-                                            <CreditCard size={18} /> Pay Now
-                                        </Button>
-                                    ) : (
-                                        <Button variant="outline" className="flex items-center gap-2 text-slate-500" disabled>
-                                            <CheckCircle size={18} /> Paid
-                                        </Button>
-                                    )}
-                                </div>
+                    {activeTab === 'unpaid' ? (
+                        pendingBills.length === 0 ? (
+                            <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                                <p className="text-slate-500">You have no pending bills. Great job!</p>
                             </div>
-                        </Card>
-                    ))}
+                        ) : (
+                            pendingBills.map((inv) => (
+                                <InvoiceCard key={inv._id} inv={inv} onPay={() => { setSelectedInvoice(inv); setShowPayModal(true); }} />
+                            ))
+                        )
+                    ) : (
+                        historyBills.length === 0 ? (
+                            <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                                <CreditCard className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                <p className="text-slate-500">No payment history found.</p>
+                            </div>
+                        ) : (
+                            historyBills.map((inv) => (
+                                <InvoiceCard key={inv._id} inv={inv} />
+                            ))
+                        )
+                    )}
                 </div>
             )}
 
@@ -189,5 +189,54 @@ const MyBilling = () => {
         </div>
     );
 };
+
+const InvoiceCard = ({ inv, onPay }) => (
+    <Card className="border border-slate-200 relative overflow-hidden transition-all hover:shadow-md">
+        {/* Status Strip */}
+        <div className={`absolute left-0 top-0 bottom-0 w-1 ${inv.paymentStatus === 'Paid' ? 'bg-green-500' : 'bg-red-500'}`} />
+
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 pl-4">
+            <div>
+                <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-sm text-slate-400">#{inv._id.slice(-6).toUpperCase()}</span>
+                    <span className="text-xs text-slate-500">{new Date(inv.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-end gap-2">
+                    <h3 className="text-2xl font-bold text-slate-900">₹{inv.totalAmount}</h3>
+                    <span className={`text-sm font-medium px-2 py-0.5 rounded-full mb-1 ${inv.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                        {inv.paymentStatus}
+                    </span>
+                </div>
+                <div className="mt-2 text-sm text-slate-600">
+                    {inv.services.map((s, i) => (
+                        <span key={i} className="mr-2">• {s.name} (x{s.quantity})</span>
+                    ))}
+                </div>
+            </div>
+
+            <div>
+                {inv.paymentStatus === 'Pending' ? (
+                    <Button
+                        variant="primary"
+                        onClick={onPay}
+                        className="flex items-center gap-2"
+                    >
+                        <CreditCard size={18} /> Pay Now
+                    </Button>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        {inv.transactionId && (
+                            <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded">Ref: {inv.transactionId.slice(-8)}</span>
+                        )}
+                        <Button variant="ghost" className="flex items-center gap-2 text-green-600 bg-green-50" disabled>
+                            <CheckCircle size={18} /> Paid
+                        </Button>
+                    </div>
+                )}
+            </div>
+        </div>
+    </Card>
+);
 
 export default MyBilling;

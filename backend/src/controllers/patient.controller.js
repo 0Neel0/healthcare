@@ -210,9 +210,16 @@ const getPatientByEmail = async (req, res, next) => {
  */
 const updatePatient = async (req, res, next) => {
     try {
+        let updateData = { ...req.body };
+
+        // Handle File Upload
+        if (req.file) {
+            updateData.profilePicture = `/uploads/${req.file.filename}`;
+        }
+
         const updated = await Patient.findByIdAndUpdate(
             req.params.id,
-            { ...req.body, updatedAt: new Date() },
+            { ...updateData, updatedAt: new Date() },
             { new: true, runValidators: true }
         );
 

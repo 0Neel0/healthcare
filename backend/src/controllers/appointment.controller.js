@@ -3,11 +3,7 @@ import { Appointment } from "../models/appointment.model.js";
 import { Patient } from "../models/patient.model.js";
 import * as smsService from "../services/sms.service.js";
 
-/**
- * Create a new appointment (Patient-facing)
- */
-// Import io from server
-import { io } from "../../server.js";
+import { User } from "../models/user.model.js";
 
 /**
  * Create a new appointment (Patient-facing)
@@ -15,7 +11,7 @@ import { io } from "../../server.js";
  */
 const createAppointment = async (req, res, next) => {
     try {
-        const { userId, primaryPhysician, schedule, reason, note, patientId } = req.body;
+        const { userId, primaryPhysician, schedule, reason, note, patientId, doctorId } = req.body;
 
         // ... validation ...
         if (!userId || !primaryPhysician || !schedule || !reason) {
@@ -30,10 +26,28 @@ const createAppointment = async (req, res, next) => {
             if (!patient) return res.status(404).json({ message: 'Patient not found' });
         }
 
+        // Find doctor to link for chat
+        let doctorUserId = null;
+
+        // 1. Try explicit ID from frontend (Most Reliable)
+        if (doctorId && mongoose.Types.ObjectId.isValid(doctorId)) {
+            doctorUserId = doctorId;
+        }
+        // 2. Fallback: Find doctor by name (Legacy/Unreliable)
+        else {
+            const doctorNameClean = primaryPhysician.replace(/^Dr\.\s+/i, '');
+            const doctorUser = await User.findOne({
+                role: 'doctor',
+                name: { $regex: new RegExp(`^${doctorNameClean}$`, 'i') }
+            });
+            doctorUserId = doctorUser?._id;
+        }
+
         const appointment = await Appointment.create({
             patient: patient?._id,
             userId,
             primaryPhysician,
+            doctor: doctorUserId, // Save reference
             schedule: new Date(schedule),
             reason,
             note,
@@ -43,7 +57,9 @@ const createAppointment = async (req, res, next) => {
         const populatedAppointment = await Appointment.findById(appointment._id).populate('patient');
 
         // Notify Admin
-        io.emit('new_appointment_request', populatedAppointment);
+        if (req.io) {
+            req.io.emit('new_appointment_request', populatedAppointment);
+        }
 
         res.status(201).json(populatedAppointment);
     } catch (err) {
@@ -68,7 +84,9 @@ const adminRequestConfirmation = async (req, res, next) => {
 
         // Emit to specific Doctor
         // Assuming doctor joins room "doctor_{doctorName}"
-        io.to(`doctor_${appointment.primaryPhysician}`).emit('doctor_confirmation_request', appointment);
+        if (req.io) {
+            req.io.to(`doctor_${appointment.primaryPhysician}`).emit('doctor_confirmation_request', appointment);
+        }
 
         res.json(appointment);
     } catch (err) {
@@ -100,8 +118,10 @@ const doctorConfirmAppointment = async (req, res, next) => {
         if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
         // Notify Admin and Patient
-        io.to('admin_room').emit('doctor_confirmed', appointment);
-        io.to(`patient_${appointment.userId}`).emit('payment_request', appointment);
+        if (req.io) {
+            req.io.to('admin_room').emit('doctor_confirmed', appointment);
+            req.io.to(`patient_${appointment.userId}`).emit('payment_request', appointment);
+        }
 
         res.json(appointment);
     } catch (err) {
@@ -225,11 +245,7 @@ const scheduleAppointment = async (req, res, next) => {
 const cancelAppointment = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { cancellationReason } = req.body;
-
-        if (!cancellationReason) {
-            return res.status(400).json({ message: 'Cancellation reason is required' });
-        }
+        const { cancellationReason = 'Cancelled by User' } = req.body;
 
         const appointment = await Appointment.findById(id).populate('patient');
 
@@ -315,7 +331,8 @@ const getPatientAppointments = async (req, res, next) => {
 
         const appointments = await Appointment.find({ patient: patientId })
             .sort({ schedule: -1 })
-            .populate('patient');
+            .populate('patient')
+            .populate('doctor');
 
         console.log(`[GetPatientAppointments] Found ${appointments.length} appointments`);
         res.json(appointments);

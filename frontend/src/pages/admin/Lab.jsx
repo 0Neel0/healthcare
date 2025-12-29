@@ -51,7 +51,7 @@ const Lab = () => {
         try {
             await labService.createRequest({
                 ...newRequest,
-                doctorId: "60d0fe4f5311236168a109ca" // Mock Doctor ID
+                doctorId: JSON.parse(localStorage.getItem('user'))._id
             });
             setShowRequestModal(false);
             setRefreshTrigger(prev => prev + 1);

@@ -32,7 +32,7 @@ const PatientSidebar = () => {
         { icon: FileText, label: 'Medical Records', path: '/patient/emr' },
         { icon: Activity, label: 'Lab Reports', path: '/patient/lab' },
         { icon: CreditCard, label: 'Billing', path: '/patient/billing' },
-        { icon: Settings, label: 'Settings', path: '/patient/settings' },
+        { icon: Settings, label: 'Settings', path: '/patient/profile' },
     ];
 
     return (
