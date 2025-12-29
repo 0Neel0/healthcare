@@ -214,7 +214,7 @@ const updatePatient = async (req, res, next) => {
 
         // Handle File Upload
         if (req.file) {
-            updateData.profilePicture = `/uploads/${req.file.filename}`;
+            updateData.profilePicture = req.file.path; // Cloudinary URL
         }
 
         const updated = await Patient.findByIdAndUpdate(
