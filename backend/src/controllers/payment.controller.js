@@ -135,7 +135,7 @@ const createSplitOrder = async (req, res, next) => {
  */
 const verifyPayment = async (req, res, next) => {
     try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, appointmentId } = req.body;
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, appointmentId, billingId } = req.body;
 
         const generated_signature = crypto
             .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -143,35 +143,49 @@ const verifyPayment = async (req, res, next) => {
             .digest('hex');
 
         if (generated_signature === razorpay_signature) {
-            // Update Appointment Status
-            const appointment = await Appointment.findByIdAndUpdate(appointmentId, {
-                status: 'scheduled',
-                paymentStatus: 'paid',
-                transactionId: razorpay_payment_id,
-                updatedAt: new Date()
-            }, { new: true });
+            // Case 1: Appointment Payment
+            if (appointmentId) {
+                const appointment = await Appointment.findByIdAndUpdate(appointmentId, {
+                    status: 'scheduled',
+                    paymentStatus: 'paid',
+                    transactionId: razorpay_payment_id,
+                    updatedAt: new Date()
+                }, { new: true });
 
-            // Create a Billing Record for this transaction so it shows in history
-            const billingRecord = new Billing({
-                patientId: appointment.patient,
-                appointmentId: appointment._id,
-                services: [{
-                    name: 'Consultation Fee',
-                    cost: appointment.consultationFee || 0,
-                    quantity: 1
-                }],
-                totalAmount: appointment.consultationFee || 0,
-                paymentStatus: 'Paid',
-                paymentMethod: 'Online',
-                transactionId: razorpay_payment_id,
-                notes: 'Paid via Online Appointment Booking'
-            });
-            await billingRecord.save();
+                if (appointment) {
+                    // Create a Billing Record for this transaction so it shows in history
+                    const billingRecord = new Billing({
+                        patientId: appointment.patient,
+                        appointmentId: appointment._id,
+                        services: [{
+                            name: 'Consultation Fee',
+                            cost: appointment.consultationFee || 0,
+                            quantity: 1
+                        }],
+                        totalAmount: appointment.consultationFee || 0,
+                        paymentStatus: 'Paid',
+                        paymentMethod: 'Online',
+                        transactionId: razorpay_payment_id,
+                        notes: 'Paid via Online Appointment Booking'
+                    });
+                    await billingRecord.save();
 
-            // Notify Doctor and Admin
-            if (req.io) {
-                req.io.to(`doctor_${appointment.primaryPhysician}`).emit('appointment_paid', appointment);
-                req.io.to('admin_room').emit('appointment_paid', appointment);
+                    // Notify Doctor and Admin
+                    if (req.io) {
+                        req.io.to(`doctor_${appointment.primaryPhysician}`).emit('appointment_paid', appointment);
+                        req.io.to('admin_room').emit('appointment_paid', appointment);
+                    }
+                }
+            }
+
+            // Case 2: Billing Payment (Updating existing Bill)
+            if (billingId) {
+                await Billing.findByIdAndUpdate(billingId, {
+                    paymentStatus: 'Paid',
+                    paymentMethod: 'Online',
+                    transactionId: razorpay_payment_id,
+                    updatedAt: new Date()
+                });
             }
 
             res.json({ success: true, message: "Payment verified successfully" });
@@ -179,11 +193,68 @@ const verifyPayment = async (req, res, next) => {
             res.status(400).json({ success: false, message: "Invalid signature" });
         }
     } catch (err) {
+        console.error('[Verification Error]', err);
+        next(err);
+    }
+};
+
+/**
+ * Create a Generic Payment Order (For Bills or Appointments)
+ */
+const createOrder = async (req, res, next) => {
+    try {
+        const { amount, appointmentId } = req.body;
+
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ message: 'Invalid amount' });
+        }
+
+        let options = {
+            amount: Math.round(amount * 100), // Convert to paise
+            currency: "INR",
+            receipt: `receipt_${Date.now()}`,
+            payment_capture: 1
+        };
+
+        // If it's an appointment, we try the split logic
+        if (appointmentId) {
+            const appointment = await Appointment.findById(appointmentId);
+            if (appointment) {
+                const apptDrName = appointment.primaryPhysician.trim();
+                const doctor = await Doctor.findOne({ name: { $regex: new RegExp(`^${apptDrName.replace(/^Dr\.?\s*/i, '')}$`, 'i') } });
+
+                if (doctor && doctor.razorpayAccountId) {
+                    const doctorShare = Math.floor(amount * 100 * 0.5);
+                    options.transfers = [
+                        {
+                            account: doctor.razorpayAccountId,
+                            amount: doctorShare,
+                            currency: "INR",
+                            notes: { name: doctor.name },
+                            on_hold: 0
+                        }
+                    ];
+                }
+                options.receipt = `receipt_${appointmentId}`;
+            }
+        }
+
+        const order = await razorpay.orders.create(options);
+
+        res.json({
+            id: order.id,
+            currency: order.currency,
+            amount: order.amount,
+            key_id: process.env.RAZORPAY_KEY_ID
+        });
+    } catch (err) {
+        console.error('[Payment Order Error]', err);
         next(err);
     }
 };
 
 export const paymentController = {
     createSplitOrder,
+    createOrder,
     verifyPayment
 };

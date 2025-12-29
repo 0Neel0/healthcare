@@ -210,11 +210,16 @@ const getPatientByEmail = async (req, res, next) => {
  */
 const updatePatient = async (req, res, next) => {
     try {
+        console.log('Update request received for ID:', req.params.id);
+        console.log('Body:', req.body);
+        console.log('File:', req.file);
+
         let updateData = { ...req.body };
 
         // Handle File Upload
         if (req.file) {
             updateData.profilePicture = req.file.path; // Cloudinary URL
+            console.log('New profile picture URL:', updateData.profilePicture);
         }
 
         const updated = await Patient.findByIdAndUpdate(
