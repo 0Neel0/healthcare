@@ -7,7 +7,9 @@ import {
     Activity,
     Settings,
     CreditCard,
-    LogOut
+    LogOut,
+    Sparkles,
+    MessageSquare
 } from 'lucide-react';
 import Logo from '../ui/Logo';
 import toast from 'react-hot-toast';
@@ -31,6 +33,8 @@ const PatientSidebar = () => {
         { icon: Calendar, label: 'Appointments', path: '/patient/appointments' },
         { icon: FileText, label: 'Medical Records', path: '/patient/emr' },
         { icon: Activity, label: 'Lab Reports', path: '/patient/lab' },
+        { icon: Sparkles, label: 'Summarizer', path: '/patient/summarize' },
+        { icon: MessageSquare, label: 'Ask ChatBot', path: '/patient/qa' },
         { icon: CreditCard, label: 'Billing', path: '/patient/billing' },
         { icon: Settings, label: 'Settings', path: '/patient/profile' },
     ];

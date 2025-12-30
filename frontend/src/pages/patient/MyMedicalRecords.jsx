@@ -253,6 +253,23 @@ const MyMedicalRecords = () => {
                                                 {new Date(doc.uploadDate).toLocaleDateString()}
                                             </p>
                                             {doc.description && <p className="text-xs text-slate-600 mb-2 truncate">{doc.description}</p>}
+                                            {doc.status === 'PENDING' && (
+                                                <div className="mt-2 bg-yellow-50 p-2 rounded-md border border-yellow-100 flex items-center gap-2">
+                                                    <span className="loading loading-spinner loading-xs text-yellow-600"></span>
+                                                    <span className="text-xs text-yellow-700">AI is analyzing this document...</span>
+                                                </div>
+                                            )}
+                                            {doc.status === 'FAILED' && (
+                                                <div className="mt-2 bg-red-50 p-2 rounded-md border border-red-100">
+                                                    <p className="text-xs text-red-600">Analysis Failed: {doc.processingError || 'Unknown error'}</p>
+                                                </div>
+                                            )}
+                                            {doc.summary && (
+                                                <div className="mt-2 bg-indigo-50 p-3 rounded-md border border-indigo-100">
+                                                    <p className="text-xs font-bold text-indigo-700 mb-1 flex items-center gap-1">✨ AI Summary</p>
+                                                    <p className="text-xs text-slate-700 leading-relaxed">{doc.summary}</p>
+                                                </div>
+                                            )}
 
                                             <div className="flex items-center gap-2 mt-2">
                                                 <a
@@ -330,7 +347,7 @@ const MyMedicalRecords = () => {
                     <div className="flex justify-end gap-2 pt-4">
                         <Button type="button" variant="outline" onClick={() => setIsUploadModalOpen(false)}>Cancel</Button>
                         <Button type="submit" disabled={uploading}>
-                            {uploading ? 'Uploading...' : 'Upload Document'}
+                            {uploading ? 'Analyzing & Uploading...' : 'Upload Document'}
                         </Button>
                     </div>
                 </form>

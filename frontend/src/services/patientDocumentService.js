@@ -32,5 +32,11 @@ export const patientDocumentService = {
     deleteDocument: async (id) => {
         const response = await api.delete(`/patient-documents/${id}`);
         return response.data;
+    },
+
+    // Ask a question about a document
+    askQuestion: async (id, question) => {
+        const response = await api.post(`/patient-documents/${id}/ask`, { question });
+        return response.data;
     }
 };

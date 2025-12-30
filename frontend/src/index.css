@@ -162,6 +162,32 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-slate-200 rounded-full hover:bg-blue-200 transition-colors;
   }
+
+  /* Scanning Animation */
+  @keyframes scan {
+    0% {
+      top: 0%;
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 1;
+    }
+
+    100% {
+      top: 100%;
+      opacity: 0;
+    }
+  }
+
+  .animate-scan {
+    animation: scan 2s linear infinite;
+    background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.5));
+  }
 }
 
 /* Custom scrollbar - Cleaner */

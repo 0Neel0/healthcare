@@ -4,7 +4,7 @@ import { User, Calendar, Shield, LogOut, LogIn, LayoutDashboard } from 'lucide-r
 import Logo from '../ui/Logo';
 import toast from 'react-hot-toast';
 
-const Header = () => {
+const Header = ({ logoHiddenOnDesktop = false, className = "" }) => {
     const navigate = useNavigate();
     const isLoggedIn = !!localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -32,10 +32,10 @@ const Header = () => {
     };
 
     return (
-        <header className="glass-effect sticky top-0 z-50 animate-slide-down">
+        <header className={`glass-effect sticky top-0 z-50 animate-slide-down ${className}`}>
             <div className="container mx-auto px-4 py-4">
                 <nav className="flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2 group decoration-transparent">
+                    <Link to="/" className={`flex items-center gap-2 group decoration-transparent ${logoHiddenOnDesktop ? 'lg:hidden' : ''}`}>
                         <Logo className="w-10 h-10" textClassName="text-2xl" />
                     </Link>
 

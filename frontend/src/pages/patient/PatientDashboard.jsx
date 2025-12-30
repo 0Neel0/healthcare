@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, FileText, Activity, Clock, Plus, ChevronRight, User, CreditCard, Bell, MessageSquare } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import appointmentService from '../../services/appointmentService';
+import { patientDocumentService } from '../../services/patientDocumentService';
 import toast from 'react-hot-toast';
 import ChatWindow from '../../components/chat/ChatWindow';
 
@@ -11,6 +12,7 @@ const PatientDashboard = () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     const [appointments, setAppointments] = useState([]);
+    const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [chatDoctor, setChatDoctor] = useState(null);
     const [stats, setStats] = useState({
@@ -26,35 +28,40 @@ const PatientDashboard = () => {
         }
     }, [user, navigate]);
 
-    // Fetch patient appointments
+    // Fetch patient appointments and documents
     useEffect(() => {
-        const fetchAppointments = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
-                const data = await appointmentService.getPatientAppointments(user._id);
-                setAppointments(data);
+                const [aptData, docData] = await Promise.all([
+                    appointmentService.getPatientAppointments(user._id),
+                    patientDocumentService.getMyDocuments().catch(err => [])
+                ]);
 
-                // Calculate stats
+                setAppointments(aptData);
+                setDocuments(docData);
+
+                // Calculate stats based on appointments
                 const now = new Date();
-                const upcoming = data.filter(apt =>
+                const upcoming = aptData.filter(apt =>
                     new Date(apt.schedule) > now && apt.status !== 'cancelled'
                 ).length;
-                const past = data.filter(apt =>
+                const past = aptData.filter(apt =>
                     new Date(apt.schedule) < now && apt.status !== 'cancelled'
                 ).length;
-                const cancelled = data.filter(apt => apt.status === 'cancelled').length;
+                const cancelled = aptData.filter(apt => apt.status === 'cancelled').length;
 
                 setStats({ upcoming, past, cancelled });
             } catch (error) {
-                console.error('Error fetching appointments:', error);
-                toast.error('Failed to load appointments');
+                console.error('Error fetching dashboard data:', error);
+                toast.error('Failed to load dashboard data');
             } finally {
                 setLoading(false);
             }
         };
 
         if (user._id) {
-            fetchAppointments();
+            fetchData();
         }
     }, [user._id]);
 
@@ -74,6 +81,9 @@ const PatientDashboard = () => {
         .sort((a, b) => new Date(b.schedule) - new Date(a.schedule))
         .slice(0, 2);
 
+    // Get recent documents
+    const recentDocuments = documents.slice(0, 3);
+
     // Check for appointments within 24 hours
     const notificationAppointments = appointments.filter(apt => {
         const aptDate = new Date(apt.schedule);
@@ -84,6 +94,7 @@ const PatientDashboard = () => {
 
     const quickActions = [
         { label: 'Book Appointment', icon: Plus, path: '/book-appointment', color: 'bg-medical-blue-500', text: 'text-white' },
+        { label: 'Medical Records', icon: FileText, path: '/patient/emr', color: 'bg-medical-blue-500', text: 'text-white' },
         { label: 'Lab Reports', icon: Activity, path: '/patient/lab', color: 'bg-white', text: 'text-slate-600', border: 'border-medical-blue-200' },
         { label: 'Pay Bills', icon: CreditCard, path: '/patient/billing', color: 'bg-white', text: 'text-slate-600', border: 'border-medical-blue-200' },
     ];
@@ -231,6 +242,48 @@ const PatientDashboard = () => {
                                     className="mt-3 text-sm font-semibold text-[#0052CC] hover:underline">
                                     Book your first appointment
                                 </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Recent Documents Section */}
+                    <div className="pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-slate-900">Recent Medical Reports</h2>
+                            <button onClick={() => navigate('/patient/emr')} className="text-sm font-semibold text-medical-blue-600 hover:text-medical-blue-700 flex items-center gap-1">
+                                View All <ChevronRight size={16} />
+                            </button>
+                        </div>
+
+                        {recentDocuments.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-4">
+                                {recentDocuments.map(doc => (
+                                    <div key={doc._id} onClick={() => navigate('/patient/emr')} className="bg-white border border-slate-200 p-4 rounded-xl hover:shadow-md transition-all cursor-pointer group">
+                                        <div className="flex items-start gap-3">
+                                            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                                                <FileText size={20} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start">
+                                                    <h4 className="font-bold text-slate-800">{doc.title}</h4>
+                                                    <span className="text-xs text-slate-500">{new Date(doc.uploadDate).toLocaleDateString()}</span>
+                                                </div>
+                                                {doc.summary && (
+                                                    <p className="text-sm text-slate-600 mt-1 line-clamp-2">
+                                                        <span className="font-semibold text-indigo-600">AI Summary:</span> {doc.summary}
+                                                    </p>
+                                                )}
+                                                {!doc.summary && doc.description && (
+                                                    <p className="text-sm text-slate-500 mt-1 line-clamp-1">{doc.description}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-slate-50 rounded-lg p-6 text-center border border-slate-100">
+                                <p className="text-slate-500 text-sm">No documents uploaded yet.</p>
                             </div>
                         )}
                     </div>

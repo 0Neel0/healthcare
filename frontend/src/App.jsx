@@ -25,6 +25,8 @@ import PatientLayout from './components/layout/PatientLayout';
 import PatientDashboard from './pages/patient/PatientDashboard';
 import MyAppointments from './pages/patient/MyAppointments';
 import MyMedicalRecords from './pages/patient/MyMedicalRecords';
+import SummarizeReport from './pages/patient/SummarizeReport';
+import DocumentQA from './pages/patient/DocumentQA'; // New Component
 import MyLabReports from './pages/patient/MyLabReports';
 import MyBilling from './pages/patient/MyBilling';
 import MyProfile from './pages/patient/MyProfile';
@@ -72,6 +74,9 @@ function App() {
             <Route path="complete-profile" element={<PatientProfileCompletion />} />
             <Route path="appointments" element={<MyAppointments />} />
             <Route path="emr" element={<MyMedicalRecords />} />
+            <Route path="emr" element={<MyMedicalRecords />} />
+            <Route path="summarize" element={<SummarizeReport />} />
+            <Route path="qa" element={<DocumentQA />} />
             <Route path="lab" element={<MyLabReports />} />
             <Route path="billing" element={<MyBilling />} />
             <Route path="profile" element={<MyProfile />} />
