@@ -10,11 +10,12 @@ export const getDashboardStats = async (req, res) => {
 };
 
 import { Appointment } from '../models/appointment.model.js';
+import { Billing } from '../models/billing.model.js';
 
 export const getRevenueStats = async (req, res) => {
     try {
-        // Aggregate Paid Appointments
-        const stats = await Appointment.aggregate([
+        // 1. Aggregate Paid Appointments (50/50 Split)
+        const appointmentStats = await Appointment.aggregate([
             { $match: { paymentStatus: 'paid' } },
             {
                 $group: {
@@ -27,8 +28,8 @@ export const getRevenueStats = async (req, res) => {
             { $sort: { totalCollected: -1 } }
         ]);
 
-        // Calculate Splits (50/50)
-        const doctorStats = stats.map(doc => ({
+        // Calculate Doctor/Admin Shares from Appointments
+        const doctorStats = appointmentStats.map(doc => ({
             doctorName: doc._id,
             totalCollected: doc.totalCollected,
             doctorShare: doc.totalCollected * 0.5,
@@ -37,15 +38,35 @@ export const getRevenueStats = async (req, res) => {
             lastPaymentDate: doc.lastPaymentDate
         }));
 
-        const totalRevenue = doctorStats.reduce((acc, curr) => acc + curr.totalCollected, 0);
-        const totalAdminShare = totalRevenue * 0.5;
-        const totalDoctorShare = totalRevenue * 0.5;
+        const totalAppointmentRevenue = doctorStats.reduce((acc, curr) => acc + curr.totalCollected, 0);
+
+        // 2. Aggregate Paid Bills (Bed Charges/Hospital Charges) - 100% to Admin
+        const billingStats = await Billing.aggregate([
+            { $match: { paymentStatus: 'Paid' } },
+            {
+                $group: {
+                    _id: null,
+                    totalCollected: { $sum: "$totalAmount" }
+                }
+            }
+        ]);
+
+        const totalBillingRevenue = billingStats.length > 0 ? billingStats[0].totalCollected : 0;
+
+        // 3. Final Totals
+        const totalRevenue = totalAppointmentRevenue + totalBillingRevenue;
+        const totalAdminShare = (totalAppointmentRevenue * 0.5) + totalBillingRevenue;
+        const totalDoctorShare = totalAppointmentRevenue * 0.5;
 
         res.json({
             summary: {
                 totalRevenue,
                 totalAdminShare,
-                totalDoctorShare
+                totalDoctorShare,
+                breakdown: {
+                    appointments: totalAppointmentRevenue,
+                    hospitalServices: totalBillingRevenue
+                }
             },
             doctorStats
         });

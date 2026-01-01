@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Modal from '../ui/Modal';
-import { Plus, X, Pill, FileText, Calendar } from 'lucide-react';
+import { Plus, X, Pill, FileText, Calendar, User, Activity } from 'lucide-react';
 import prescriptionService from '../../services/prescriptionService';
 import toast from 'react-hot-toast';
 import DatePicker from '../ui/DatePicker';

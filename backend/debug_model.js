@@ -5,7 +5,7 @@ dotenv.config();
 
 const testModel = async () => {
     try {
-        console.log("Testing text-only prompt on gemini-1.5-flash...");
+        console.log("Testing text-only prompt on gemini-2.5-flash-lite...");
 
         if (!process.env.GEMINI_API_KEY) {
             console.error("API Key missing!");

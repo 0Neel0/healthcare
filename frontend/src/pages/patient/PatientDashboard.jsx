@@ -4,6 +4,7 @@ import { Calendar, FileText, Activity, Clock, Plus, ChevronRight, User, CreditCa
 import Card from '../../components/ui/Card';
 import appointmentService from '../../services/appointmentService';
 import { patientDocumentService } from '../../services/patientDocumentService';
+import wardService from '../../services/wardService';
 import toast from 'react-hot-toast';
 import ChatWindow from '../../components/chat/ChatWindow';
 
@@ -21,6 +22,8 @@ const PatientDashboard = () => {
         cancelled: 0
     });
 
+    const [admissions, setAdmissions] = useState([]);
+
     // Redirect to profile completion if needed
     useEffect(() => {
         if (user && (user.address === 'TBD' || !user.address)) {
@@ -28,20 +31,22 @@ const PatientDashboard = () => {
         }
     }, [user, navigate]);
 
-    // Fetch patient appointments and documents
+    // Fetch patient appointments, documents, and admissions
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [aptData, docData] = await Promise.all([
+                const [aptData, docData, admissionData] = await Promise.all([
                     appointmentService.getPatientAppointments(user._id),
-                    patientDocumentService.getMyDocuments().catch(err => [])
+                    patientDocumentService.getMyDocuments().catch(err => []),
+                    wardService.getPatientAdmissions(user._id).catch(err => [])
                 ]);
 
                 setAppointments(aptData);
                 setDocuments(docData);
+                setAdmissions(admissionData);
 
-                // Calculate stats based on appointments
+                // Calculate stats based on Apts...
                 const now = new Date();
                 const upcoming = aptData.filter(apt =>
                     new Date(apt.schedule) > now && apt.status !== 'cancelled'
@@ -150,6 +155,61 @@ const PatientDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Active Admission Card */}
+            {admissions.filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 2).length > 0 && (
+                <div className="bg-indigo-600 rounded-xl p-6 text-white shadow-lg mb-8">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <Activity className="text-indigo-200" /> Current Hospital Admission
+                            </h2>
+                            <p className="text-indigo-100 mt-1">You are currently admitted in the hospital.</p>
+                        </div>
+                        <div className="bg-white/20 px-4 py-2 rounded-lg backdrop-blur-sm">
+                            <span className="text-xs font-bold uppercase tracking-wider text-indigo-100">Status</span>
+                            <p className="font-bold">Admitted</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                        {admissions
+                            .filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 2)
+                            .map((admission, index) => {
+                                const diffMs = new Date() - new Date(admission.admissionDate);
+                                const diffHours = diffMs / (1000 * 60 * 60);
+                                const days = Math.ceil(diffHours / 24);
+                                const currentCost = days * admission.costPerDay;
+
+                                return (<div key={index} className="bg-white/10 rounded-lg p-4 border border-white/10">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-indigo-200 text-xs uppercase font-bold">Ward / Bed</p>
+                                            <p className="font-bold text-lg">{admission.wardName}</p>
+                                            <p className="text-sm">Bed {admission.bedNumber} ({admission.bedType})</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-indigo-200 text-xs uppercase font-bold">Admission Date</p>
+                                            <p className="font-bold text-lg">{new Date(admission.admissionDate).toLocaleDateString()}</p>
+                                            <p className="text-sm">{days} Day{days !== 1 ? 's' : ''}</p>
+                                        </div>
+                                        <div className="col-span-2 pt-2 border-t border-white/10 mt-2">
+                                            <div className="flex justify-between items-end">
+                                                <div>
+                                                    <p className="text-indigo-200 text-xs uppercase font-bold">Estimated Charges</p>
+                                                    <p className="text-xs opacity-70">₹{admission.costPerDay}/day × {days} days</p>
+                                                </div>
+                                                <p className="text-2xl font-bold">₹{currentCost}</p>
+                                            </div>
+                                            <p className="text-xs text-indigo-200 mt-2 italic">* Final bill generated upon discharge.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                );
+                            })}
+                    </div>
+                </div>
+            )}
 
             {/* Quick Actions & Stats */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

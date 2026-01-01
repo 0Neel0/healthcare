@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Download, CheckCircle, AlertCircle } from 'lucide-react';
 import { billingService } from '../../services/billingService';
-import paymentService from '../../services/paymentService'; // Import payment service
+import paymentService from '../../services/paymentService';
+import wardService from '../../services/wardService'; // Import wardService
 import Card from '../../components/ui/Card';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
@@ -9,10 +10,11 @@ import toast from 'react-hot-toast';
 
 const MyBilling = () => {
     const [invoices, setInvoices] = useState([]);
+    const [admissions, setAdmissions] = useState([]); // State for active admissions
     const [loading, setLoading] = useState(true);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [showPayModal, setShowPayModal] = useState(false);
-    const [payLoading, setPayLoading] = useState(false); // New loading state for payment
+    const [payLoading, setPayLoading] = useState(false);
     const user = JSON.parse(localStorage.getItem('patientUser') || localStorage.getItem('user') || '{}');
 
     // Load Razorpay script on mount
@@ -20,22 +22,26 @@ const MyBilling = () => {
         paymentService.loadRazorpayScript();
     }, []);
 
-    const loadInvoices = async () => {
+    const loadData = async () => {
         if (!user._id) return;
         setLoading(true);
         try {
-            const res = await billingService.getAllInvoices({ patientId: user._id });
-            setInvoices(res.data);
+            const [invoiceRes, admissionRes] = await Promise.all([
+                billingService.getAllInvoices({ patientId: user._id }),
+                wardService.getPatientAdmissions(user._id).catch(() => [])
+            ]);
+            setInvoices(invoiceRes.data);
+            setAdmissions(admissionRes);
         } catch (err) {
-            console.error("Failed to load invoices", err);
-            toast.error("Failed to load invoices");
+            console.error("Failed to load data", err);
+            toast.error("Failed to load billing data");
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadInvoices();
+        loadData();
     }, [user._id]);
 
     const handlePay = async (e) => {
@@ -44,10 +50,8 @@ const MyBilling = () => {
 
         setPayLoading(true);
         try {
-            // 1. Create Order via Billing Service (which calls Payment Service)
             const order = await billingService.payBill(selectedInvoice._id, selectedInvoice.totalAmount);
 
-            // 2. Open Razorpay Modal
             const options = {
                 key: order.keyId,
                 amount: order.amount,
@@ -57,7 +61,6 @@ const MyBilling = () => {
                 order_id: order.order_id,
                 handler: async function (response) {
                     try {
-                        // 3. Verify Payment
                         const verification = await billingService.verifyBillPayment({
                             ...response,
                             billingId: selectedInvoice._id
@@ -66,7 +69,7 @@ const MyBilling = () => {
                         if (verification.success) {
                             toast.success('Payment successful!');
                             setShowPayModal(false);
-                            loadInvoices(); // Refresh list to show Paid
+                            loadData(); // Refresh all data
                         } else {
                             toast.error('Payment verification failed');
                         }
@@ -93,16 +96,42 @@ const MyBilling = () => {
 
             const rzp = new window.Razorpay(options);
             rzp.open();
-
-            // Note: We don't setPayLoading(false) here immediately because we wait for user action in modal
-            // But we can reset it if we want the "Processing" text to go away while they browse the modal.
-            // Usually keeping it is fine or setting it false. Let's set it false to allow re-clicks if needed
-            // though the modal is open.
             setPayLoading(false);
 
         } catch (err) {
             console.error('Payment initialization failed:', err);
             toast.error('Could not initiate payment');
+            setPayLoading(false);
+        }
+    };
+
+    const handleGenerateAndPay = async (wardId, bedId) => {
+        setPayLoading(true);
+        try {
+            toast.loading("Generating interim bill...", { id: "genBill" });
+            const newBill = await wardService.generateInterimBill(wardId, bedId);
+            toast.success("Bill generated!", { id: "genBill" });
+
+            // Set as selected and open modal immediately
+            setSelectedInvoice(newBill);
+            // Refresh data to show it in list (optional but good for sync)
+            loadData();
+
+            // Trigger payment flow immediately (reusing handlePay logic but we need an event or direct call)
+            // Since handlePay expects an event, let's extract the core logic or just set state and let user click?
+            // Better user experience: Open the specific payment flow.
+
+            // Let's reuse the internal logic of handlePay by calling it directly if we refactor, 
+            // but for now, let's just Open the Modal and let them click "Proceed to Pay" 
+            // OR even better, auto-click it?
+
+            // Simplest: Show the Pay Modal with this new bill selected.
+            setShowPayModal(true);
+            setPayLoading(false);
+
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to generate bill", { id: "genBill" });
             setPayLoading(false);
         }
     };
@@ -115,6 +144,51 @@ const MyBilling = () => {
     return (
         <div className="space-y-6 animate-fade-in">
             <h1 className="text-2xl font-bold text-slate-900">My Billing & Payments</h1>
+
+            {/* Display Active Admission Charges (Running Bill) */}
+            {admissions.filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 2).length > 0 && (
+                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-6 mb-6">
+                    <h2 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
+                        <AlertCircle size={20} /> Current Admission (Running Bill)
+                    </h2>
+                    <div className="grid grid-cols-1 gap-4">
+                        {admissions
+                            .filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 2)
+                            .map((adm, idx) => {
+                                const diffMs = new Date() - new Date(adm.admissionDate);
+                                const diffHours = diffMs / (1000 * 60 * 60);
+                                const days = Math.ceil(diffHours / 24);
+                                const currentCost = days * adm.costPerDay;
+
+                                return (
+                                    <div key={idx} className="bg-white p-4 rounded-lg border border-indigo-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+                                        <div>
+                                            <p className="font-bold text-slate-900">{adm.wardName} - Bed {adm.bedNumber}</p>
+                                            <p className="text-sm text-slate-500">
+                                                Billing Cycle Start: {new Date(adm.admissionDate).toLocaleDateString()}
+                                                {days > 0 ? ` (${days} days)` : ' (Just Started)'}
+                                            </p>
+                                        </div>
+                                        <div className="text-right flex items-center gap-4">
+                                            <div>
+                                                <p className="text-sm text-slate-500 uppercase font-bold">Estimated Total</p>
+                                                <p className="text-2xl font-bold text-indigo-600">₹{currentCost}</p>
+                                            </div>
+                                            <Button
+                                                onClick={() => handleGenerateAndPay(adm.wardId, adm.bedId)}
+                                                variant="primary"
+                                                disabled={payLoading || currentCost === 0}
+                                                className={currentCost === 0 ? "opacity-50 cursor-not-allowed" : ""}
+                                            >
+                                                {currentCost === 0 ? "Paid" : "Pay Now"}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                    </div>
+                </div>
+            )}
 
             {/* Tabs */}
             <div className="flex border-b border-slate-200">
