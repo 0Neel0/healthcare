@@ -166,8 +166,8 @@ export const generateInterimBill = async (req, res) => {
         const diffTime = Math.abs(now - admissionDate);
         const diffHours = diffTime / (1000 * 60 * 60);
 
-        if (diffHours < 2) {
-            return res.status(400).json({ message: "No new charges to bill yet. Minimum billing interval is 2 hours." });
+        if (diffHours < 24) {
+            return res.status(400).json({ message: "No new charges to bill yet. Minimum billing interval is 24 hours." });
         }
 
         const daysStayed = Math.ceil(diffHours / 24);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, FileText, Activity, Clock, Plus, ChevronRight, User, CreditCard, Bell, MessageSquare } from 'lucide-react';
+import { Calendar, FileText, Activity, Clock, Plus, ChevronRight, User, CreditCard, Bell, MessageSquare, Sparkles } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import appointmentService from '../../services/appointmentService';
 import { patientDocumentService } from '../../services/patientDocumentService';
@@ -98,17 +98,49 @@ const PatientDashboard = () => {
     });
 
     const quickActions = [
-        { label: 'Book Appointment', icon: Plus, path: '/book-appointment', color: 'bg-medical-blue-500', text: 'text-white' },
-        { label: 'Medical Records', icon: FileText, path: '/patient/emr', color: 'bg-medical-blue-500', text: 'text-white' },
-        { label: 'Lab Reports', icon: Activity, path: '/patient/lab', color: 'bg-white', text: 'text-slate-600', border: 'border-medical-blue-200' },
-        { label: 'Pay Bills', icon: CreditCard, path: '/patient/billing', color: 'bg-white', text: 'text-slate-600', border: 'border-medical-blue-200' },
+        {
+            label: 'Book New Appointment',
+            desc: 'Schedule a consultation',
+            icon: Calendar,
+            path: '/book-appointment',
+            gradient: 'from-blue-600 to-indigo-600',
+            iconColor: 'text-white'
+        },
+        {
+            label: 'Analyze Report (AI)',
+            desc: 'Get instant summary',
+            icon: Sparkles,
+            path: '/patient/summarize-report',
+            gradient: 'from-violet-600 to-purple-600',
+            iconColor: 'text-white'
+        },
+        {
+            label: 'My Medical Records',
+            desc: 'View history & prescriptions',
+            icon: FileText,
+            path: '/patient/emr',
+            gradient: 'bg-white border border-slate-200 hover:border-blue-300',
+            textColor: 'text-slate-700',
+            iconBg: 'bg-blue-50',
+            iconColor: 'text-blue-600'
+        },
+        {
+            label: 'Billing & Payments',
+            desc: 'View invoices & pay',
+            icon: CreditCard,
+            path: '/patient/billing',
+            gradient: 'bg-white border border-slate-200 hover:border-indigo-300',
+            textColor: 'text-slate-700',
+            iconBg: 'bg-indigo-50',
+            iconColor: 'text-indigo-600'
+        },
     ];
 
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 border-4 border-medical-blue-200 border-t-medical-blue-600 rounded-full animate-spin mb-4"></div>
+                    <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
                     <p className="text-slate-500 font-medium">Loading your dashboard...</p>
                 </div>
             </div>
@@ -119,11 +151,11 @@ const PatientDashboard = () => {
         <div className="space-y-8 animate-fade-in pb-10">
             {/* Notifications for upcoming appointments */}
             {notificationAppointments.length > 0 && (
-                <div className="bg-demo-orange-50 border border-demo-orange-200 rounded-xl p-4 flex items-start gap-3">
-                    <Bell className="text-demo-orange-600 flex-shrink-0 mt-0.5" size={20} />
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                    <Bell className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
                     <div className="flex-1">
-                        <p className="font-semibold text-demo-orange-900">Upcoming Appointment Reminder</p>
-                        <p className="text-sm text-demo-orange-700 mt-1">
+                        <p className="font-semibold text-amber-900">Upcoming Appointment Reminder</p>
+                        <p className="text-sm text-amber-700 mt-1">
                             You have {notificationAppointments.length} appointment{notificationAppointments.length > 1 ? 's' : ''} in the next 24 hours.
                         </p>
                     </div>
@@ -131,33 +163,37 @@ const PatientDashboard = () => {
             )}
 
             {/* Welcome Banner */}
-            <div className="relative overflow-hidden rounded-2xl bg-[#0052CC] p-8 md:p-12 text-white shadow-lg">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-700 to-indigo-800 p-8 md:p-12 text-white shadow-xl shadow-blue-900/10">
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
-                        <p className="text-[#DEEBFF] font-medium mb-1">{greeting}</p>
+                        <p className="text-blue-100 font-medium mb-1 font-sans">{greeting}</p>
                         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
                             {user.name}
                         </h1>
-                        <p className="mt-2 text-white opacity-90 max-w-lg">
+                        <p className="mt-2 text-blue-100/90 max-w-lg leading-relaxed">
                             {stats.upcoming > 0
-                                ? `You have ${stats.upcoming} upcoming appointment${stats.upcoming > 1 ? 's' : ''}.`
-                                : 'You have no upcoming appointments. Book one today!'}
+                                ? `You have ${stats.upcoming} upcoming appointment${stats.upcoming > 1 ? 's' : ''} scheduled.`
+                                : 'You have no upcoming appointments. Stay healthy!'}
                         </p>
                     </div>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 flex items-center gap-4 min-w-[200px] border border-white/20">
+                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 flex items-center gap-4 min-w-[200px] border border-white/10 shadow-lg">
                         <div className="bg-white/20 p-3 rounded-lg">
                             <User className="text-white" size={24} />
                         </div>
                         <div>
-                            <p className="text-xs text-white/80 font-medium">Patient ID</p>
-                            <p className="font-mono font-bold tracking-wide">{user._id?.slice(-8).toUpperCase()}</p>
+                            <p className="text-xs text-blue-100 font-semibold uppercase tracking-wider">Patient ID</p>
+                            <p className="font-mono font-bold tracking-wide text-lg">{user._id?.slice(-8).toUpperCase()}</p>
                         </div>
                     </div>
                 </div>
+
+                {/* Decorative Circles */}
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-2xl"></div>
             </div>
 
             {/* Active Admission Card */}
-            {admissions.filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 2).length > 0 && (
+            {admissions.filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 24).length > 0 && (
                 <div className="bg-indigo-600 rounded-xl p-6 text-white shadow-lg mb-8">
                     <div className="flex items-start justify-between">
                         <div>
@@ -174,7 +210,7 @@ const PatientDashboard = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                         {admissions
-                            .filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 2)
+                            .filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 24)
                             .map((admission, index) => {
                                 const diffMs = new Date() - new Date(admission.admissionDate);
                                 const diffHours = diffMs / (1000 * 60 * 60);
@@ -215,24 +251,42 @@ const PatientDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                 {/* Quick Actions (Left 2/3) */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-slate-900">Quick Actions</h2>
-                    </div>
+                <div className="lg:col-span-2 space-y-8">
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {quickActions.map((action, i) => (
-                            <button
-                                key={i}
-                                onClick={() => navigate(action.path)}
-                                className={`p-4 rounded-xl flex flex-col items-start gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${action.color} ${action.text} ${action.border ? `border ${action.border}` : ''} shadow-sm`}
-                            >
-                                <div className={`p-2 rounded-lg ${action.text === 'text-white' ? 'bg-white/20' : 'bg-medical-blue-50'}`}>
-                                    <action.icon size={22} />
-                                </div>
-                                <span className="font-semibold text-sm">{action.label}</span>
-                            </button>
-                        ))}
+                    {/* ACTION GRID */}
+                    <div>
+                        <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <Sparkles className="text-amber-500 w-5 h-5" /> Quick Actions
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {quickActions.map((action, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => navigate(action.path)}
+                                    className={`
+                                        relative overflow-hidden p-5 rounded-2xl transition-all duration-300 group
+                                        ${action.gradient.includes('from-') ? `bg-gradient-to-br ${action.gradient} text-white shadow-lg shadow-blue-500/20 border-0` : `${action.gradient}`}
+                                        hover:-translate-y-1
+                                    `}
+                                >
+                                    <div className="flex flex-col items-start gap-1 relative z-10 w-full">
+                                        <div className={`p-3 rounded-xl mb-3 ${action.iconBg || 'bg-white/20'}`}>
+                                            <action.icon size={24} className={action.iconColor || ''} />
+                                        </div>
+                                        <h3 className={`font-bold text-lg ${action.textColor || 'text-white'}`}>{action.label}</h3>
+                                        <p className={`text-sm ${action.textColor ? 'text-slate-500' : 'text-blue-100'} font-medium`}>{action.desc}</p>
+                                    </div>
+
+                                    {/* Hover Effect for Primary Cards */}
+                                    {action.gradient.includes('from-') && (
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500"></div>
+                                    )}
+                                    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <ChevronRight className={action.textColor ? "text-slate-400" : "text-white"} />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Upcoming Appointments Section */}

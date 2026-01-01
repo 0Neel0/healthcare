@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
 from pydantic import BaseModel
 import uvicorn
 import os
@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from app.services.text_extractor import PDFTextExtractor
 from app.services.summarizer import GeminiSummarizer
 from app.services.rag_service import RAGService
+from app.services.image_analyzer import MedicalImageAnalyzer
 import requests
 
 # Load env from backend directory
@@ -24,6 +25,7 @@ app = FastAPI()
 extractor = PDFTextExtractor()
 summarizer = GeminiSummarizer(api_key=API_KEY) if API_KEY else None
 rag_service = RAGService(api_key=API_KEY) if API_KEY else None
+image_analyzer = MedicalImageAnalyzer(api_key=API_KEY) if API_KEY else None
 
 class JobRequest(BaseModel):
     document_id: str
@@ -85,6 +87,25 @@ async def answer_question(req: QARequest):
         return {"answer": answer}
     except Exception as e:
         print(f"QA Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/analyze-image")
+async def analyze_image(file: UploadFile = File(...)):
+    print(f"Received image analysis request: {file.filename}, {file.content_type}")
+    if not image_analyzer:
+        print("Error: Image Analyzer not configured")
+        raise HTTPException(status_code=500, detail="Image Analyzer not configured (Missing API Key)")
+    
+    try:
+        content = await file.read()
+        print(f"Read {len(content)} bytes from file")
+        analysis = image_analyzer.analyze_image(content, file.content_type)
+        print("Analysis generated successfully")
+        return {"analysis": analysis}
+    except Exception as e:
+        print(f"Analysis Failed with Exception: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")

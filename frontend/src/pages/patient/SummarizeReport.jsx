@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Upload, FileText, Sparkles, AlertCircle, CheckCircle, Activity, Brain, Shield, Clock, X, FileCheck, ChevronRight, Printer, Share2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Upload, FileText, Sparkles, AlertCircle, CheckCircle, Activity, Brain, Shield, Clock, X, FileCheck, ChevronRight, Printer, Share2, Scan } from 'lucide-react';
 import { patientDocumentService } from '../../services/patientDocumentService';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
@@ -10,18 +10,41 @@ const SummarizeReport = () => {
     const [processingStep, setProcessingStep] = useState('idle'); // idle, uploading, scanning, analyzing, complete
     const [summary, setSummary] = useState(null);
     const [error, setError] = useState(null);
+    const [dragActive, setDragActive] = useState(false);
+    const resultsRef = useRef(null);
 
     const handleFileSelect = (e) => {
         const selectedFile = e.target.files[0];
-        if (selectedFile) {
-            if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
-                toast.error("File size must be less than 10MB");
-                return;
-            }
-            setFile(selectedFile);
-            setSummary(null);
-            setError(null);
-            setProcessingStep('idle');
+        if (selectedFile) processFile(selectedFile);
+    };
+
+    const processFile = (file) => {
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            toast.error("File size must be less than 10MB");
+            return;
+        }
+        setFile(file);
+        setSummary(null);
+        setError(null);
+        setProcessingStep('idle');
+    };
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            processFile(e.dataTransfer.files[0]);
         }
     };
 
@@ -33,12 +56,16 @@ const SummarizeReport = () => {
             setProcessingStep('uploading');
             setError(null);
 
+            // Scroll to results anticipating content
+            setTimeout(() => {
+                resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+
             const title = `AI Analysis - ${file.name}`;
             const description = "Automated Medical Report Analysis";
 
             // 1. Upload Document
             const doc = await patientDocumentService.uploadDocument(file, title, description);
-
             setProcessingStep('scanning');
 
             // 2. Poll for Status
@@ -48,7 +75,6 @@ const SummarizeReport = () => {
                         const updatedDocs = await patientDocumentService.getMyDocuments();
                         const currentDoc = updatedDocs.find(d => d._id === doc._id);
 
-                        // Fake progress transition for UI effect
                         setProcessingStep(prev => prev === 'scanning' ? 'analyzing' : prev);
 
                         if (currentDoc) {
@@ -92,218 +118,193 @@ const SummarizeReport = () => {
         }
     };
 
+    const clearSelection = () => {
+        setFile(null);
+        setSummary(null);
+        setProcessingStep('idle');
+    };
+
     return (
-        <div className="max-w-7xl mx-auto space-y-6 animate-fade-in p-4 min-h-[calc(100vh-80px)] flex flex-col font-inter">
-            {/* Compact Header */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-                        <Sparkles size={24} />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Medical Report Summarizer</h1>
-                        <p className="text-slate-500 text-sm flex items-center gap-2">
-                            <span className="w-1 h-1 bg-slate-400 rounded-full"></span>
-                        </p>
-                    </div>
+        <div className="space-y-8 animate-fade-in p-2 font-sans">
+
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+                        <FileText className="text-[#0052CC]" size={32} />
+                        Medical Report Analysis
+                    </h1>
+                    <p className="text-[#42526E] mt-1">AI-Powered Interpretation & Summarization</p>
                 </div>
-                <div className="flex gap-3 text-xs font-semibold text-indigo-700 bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-100">
-                    <span className="flex items-center gap-1"><Shield size={14} /> Encrypted</span>
-                    <span className="w-px h-4 bg-indigo-200"></span>
-                    <span className="flex items-center gap-1"><Brain size={14} /> Smart Analysis</span>
+                <div className="flex items-center gap-3">
+                    <div className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider rounded-full border border-indigo-100 flex items-center gap-2">
+                        <Shield className="w-3 h-3" />
+                        Encrypted & Private
+                    </div>
                 </div>
             </div>
 
-            {/* Main Content Area - Vertical Layout */}
-            <div className="flex flex-col gap-6 flex-1">
+            <div className="flex flex-col gap-8">
 
-                {/* 1. Upload & Action Bar */}
-                <div className={`grid grid-cols-1 md:grid-cols-12 gap-6 transition-all duration-300 ${processingStep !== 'idle' ? 'opacity-80 pointer-events-none' : ''}`}>
-
-                    {/* File Drop Zone */}
-                    <div className="md:col-span-9 bg-white rounded-2xl shadow-sm border border-slate-200 p-1">
-                        <div className={`relative h-20 md:h-24 rounded-xl border-2 border-dashed transition-all flex items-center px-6 gap-6 ${file ? 'border-indigo-300 bg-indigo-50/30' : 'border-slate-200 bg-slate-50 hover:border-indigo-400 hover:bg-slate-100'}`}>
-
-                            <input
-                                type="file"
-                                onChange={handleFileSelect}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                                accept="application/pdf,image/*"
-                                disabled={uploading}
-                            />
-
-                            {file ? (
-                                <>
-                                    <div className="w-12 h-12 bg-white rounded-lg border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0 z-10">
-                                        <FileCheck size={24} />
-                                    </div>
-                                    <div className="flex-1 z-10 min-w-0">
-                                        <h4 className="font-bold text-slate-800 text-lg truncate">{file.name}</h4>
-                                        <p className="text-slate-500 text-xs">{(file.size / 1024 / 1024).toFixed(2)} MB • Ready to analyze</p>
-                                    </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            setFile(null);
-                                        }}
-                                        className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors z-30"
-                                    >
-                                        <X size={20} />
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="w-12 h-12 bg-white rounded-full border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                                        <Upload size={20} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-semibold text-slate-700">Upload Medical Document</h4>
-                                        <p className="text-slate-400 text-sm">PDF, JPEG, PNG (Max 10MB)</p>
-                                    </div>
-                                </>
+                {/* Top Section: Upload */}
+                <div className="w-full">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-[#F4F5F7]/50">
+                            <h2 className="font-bold text-[#253858] flex items-center gap-2">
+                                <Upload className="w-4 h-4 text-[#0052CC]" /> Source Document
+                            </h2>
+                            {file && (
+                                <button onClick={clearSelection} className="text-xs font-medium text-[#42526E] hover:text-[#DE350B] flex items-center gap-1 transition-colors">
+                                    <X className="w-3 h-3" /> Clear
+                                </button>
                             )}
                         </div>
-                    </div>
 
-                    {/* Action Button */}
-                    <div className="md:col-span-3">
-                        <Button
-                            className={`w-full h-full min-h-[5rem] text-lg font-bold shadow-lg shadow-indigo-200 transition-all rounded-2xl ${!file ? 'opacity-50 cursor-not-allowed bg-slate-300' : 'bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95'}`}
-                            onClick={handleUpload}
-                            disabled={!file || uploading}
-                        >
-                            {uploading ? (
-                                <span className="flex items-center gap-2">
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    Processing...
-                                </span>
+                        <div className="p-8">
+                            {!file ? (
+                                <div
+                                    className={`
+                                        border-2 border-dashed rounded-xl h-48 flex flex-col items-center justify-center text-center transition-all cursor-pointer group
+                                        ${dragActive ? 'border-[#0052CC] bg-[#DEEBFF]' : 'border-slate-300 hover:border-[#4C9AFF] hover:bg-slate-50'}
+                                    `}
+                                    onDragEnter={handleDrag}
+                                    onDragLeave={handleDrag}
+                                    onDragOver={handleDrag}
+                                    onDrop={handleDrop}
+                                    onClick={() => document.getElementById('report-upload').click()}
+                                >
+                                    <input id="report-upload" type="file" className="hidden" accept="application/pdf,image/*" onChange={handleFileSelect} />
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-3 bg-[#F4F5F7] rounded-full group-hover:scale-110 transition-transform">
+                                            <FileText className="w-6 h-6 text-[#7A869A] group-hover:text-[#0052CC]" />
+                                        </div>
+                                        <div className="text-left">
+                                            <h3 className="text-[#253858] font-bold text-lg">Upload Report</h3>
+                                            <p className="text-[#42526E] text-sm">Drag & drop PDF, JPG, or PNG files (Max 10MB)</p>
+                                        </div>
+                                    </div>
+                                </div>
                             ) : (
-                                <span className="flex items-center gap-2">
-                                    Analyze Report <ChevronRight size={20} />
-                                </span>
+                                <div className="flex flex-col md:flex-row items-center gap-6 p-6 bg-slate-50 rounded-xl border border-slate-200">
+                                    <div className="w-16 h-16 bg-white rounded-xl shadow-sm flex items-center justify-center border border-slate-100 text-[#00875A]">
+                                        <FileCheck className="w-8 h-8" />
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-[#253858] text-lg">{file.name}</h3>
+                                        <p className="text-xs text-[#7A869A] uppercase tracking-wider mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB • Ready to analyze</p>
+                                    </div>
+
+                                    <div className="w-full md:w-auto">
+                                        <Button
+                                            variant="primary"
+                                            size="lg"
+                                            className="w-full md:w-auto shadow-lg shadow-indigo-900/10 whitespace-nowrap"
+                                            disabled={!file || uploading}
+                                            onClick={handleUpload}
+                                        >
+                                            {uploading ? (
+                                                <span className="flex items-center gap-2">
+                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                    Processing...
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    Analyze with AI <ChevronRight className="w-4 h-4 ml-1" />
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
                             )}
-                        </Button>
+
+                            {uploading && (
+                                <div className="mt-6">
+                                    <div className="w-full bg-slate-100 rounded-full h-2 mb-2">
+                                        <div className="bg-[#0052CC] h-2 rounded-full animate-pulse w-2/3"></div>
+                                    </div>
+                                    <p className="text-center text-xs text-[#0052CC] font-bold animate-pulse">Reading content and generating summary...</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* 2. Results Area (Fills space) */}
-                <div className="flex-1 bg-slate-100 rounded-3xl border border-slate-200 p-2 md:p-4 shadow-inner min-h-[600px] flex flex-col relative overflow-hidden">
-
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #64748b 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
-
-                    {/* Content Container - The "Paper" */}
-                    <div className="flex-1 bg-white rounded-2xl shadow-xl shadow-slate-200/50 w-full h-full overflow-hidden flex flex-col relative z-10 transition-all duration-500">
-
-                        {/* Header of the "Paper" */}
-                        <div className="h-16 border-b border-slate-100 flex items-center justify-between px-6 bg-white shrink-0">
-                            <div className="flex items-center gap-2 text-slate-400">
-                                <FileText size={16} />
-                                <span className="text-xs font-semibold uppercase tracking-wider">Analysis Result</span>
-                            </div>
-                            {summary && (
-                                <div className="flex gap-2">
-                                    <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors" title="Print" onClick={() => window.print()}>
-                                        <Printer size={18} />
-                                    </button>
-                                    <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors" title="Share">
-                                        <Share2 size={18} />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Scrollable Content Body */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-
-                            {processingStep !== 'idle' && processingStep !== 'complete' && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm z-20">
-                                    <div className="relative w-32 h-40 bg-white rounded-lg border border-slate-200 shadow-xl mb-8 flex items-center justify-center overflow-hidden">
-                                        <div className="absolute inset-0 bg-slate-50 flex flex-col gap-2 p-3">
-                                            <div className="h-2 w-3/4 bg-slate-200 rounded"></div>
-                                            <div className="h-2 w-full bg-slate-200 rounded"></div>
-                                            <div className="h-2 w-5/6 bg-slate-200 rounded"></div>
-                                            <div className="h-2 w-4/5 bg-slate-200 rounded"></div>
-                                        </div>
-                                        <div className="absolute top-0 w-full h-1 bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.6)] animate-scan"></div>
-                                    </div>
-
-                                    <h3 className="text-xl font-bold text-slate-800 mb-2">Analyzing Document...</h3>
-                                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                                        <span className={`transition-colors ${['uploading', 'scanning', 'analyzing'].includes(processingStep) ? 'text-indigo-600 font-medium' : ''}`}>Uploading</span>
-                                        <ChevronRight size={12} />
-                                        <span className={`transition-colors ${['scanning', 'analyzing'].includes(processingStep) ? 'text-indigo-600 font-medium' : ''}`}>Scanning</span>
-                                        <ChevronRight size={12} />
-                                        <span className={`transition-colors ${['analyzing'].includes(processingStep) ? 'text-indigo-600 font-medium' : ''}`}>Synthesizing</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {error && (
-                                <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-                                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-4">
-                                        <AlertCircle size={32} />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-800">Processing Failed</h3>
-                                    <p className="text-slate-500 max-w-xs mt-2">{error}</p>
-                                    <Button variant="ghost" className="mt-4 text-indigo-600" onClick={() => { setError(null); setProcessingStep('idle'); }}>
-                                        Try Again
-                                    </Button>
-                                </div>
-                            )}
-
-                            {processingStep === 'complete' && summary && (
-                                <div className="p-8 md:p-12 animate-fade-in-up max-w-4xl mx-auto">
-                                    <div className="flex items-center gap-3 mb-8 pb-6 border-b border-slate-100">
-                                        <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                                            <CheckCircle size={24} />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h2 className="text-2xl font-bold text-slate-800">Key Insights & Summary</h2>
-                                            <p className="text-slate-500 text-sm">AI Analysis of {file?.name}</p>
-                                        </div>
-                                        <div className="text-right hidden md:block">
-                                            <p className="text-xs text-slate-400 font-mono uppercase">Report ID</p>
-                                            <p className="font-mono text-slate-600">#AI-{Math.floor(Math.random() * 10000)}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="prose prose-lg prose-indigo max-w-none text-slate-700">
-                                        <div className="text-slate-600 leading-relaxed whitespace-pre-line">
-                                            {summary}
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-12 p-6 bg-slate-50 border-l-4 border-indigo-500 rounded-r-lg">
-                                        <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2 flex items-center gap-2">
-                                            <Shield size={16} className="text-indigo-500" /> AI Disclaimer
-                                        </h4>
-                                        <p className="text-sm text-slate-600 leading-relaxed">
-                                            This summary is generated by an artificial intelligence model (Gemini 2.5 Flash) and is intended for informational clarity only.
-                                            It may not capture all clinical nuances. Please verify all critical information with the original document and a certified medical professional.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {processingStep === 'idle' && !error && !summary && (
-                                <div className="h-full flex flex-col items-center justify-center p-10 text-center">
-                                    <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                                        <Activity size={40} className="text-slate-300" />
-                                    </div>
-                                    <h2 className="text-xl font-bold text-slate-400">No Report Analyzed Yet</h2>
-                                    <p className="text-slate-400 mt-2 max-w-sm">
-                                        Upload a medical document above to see the AI-generated summary, key findings, and action items here.
+                {/* Bottom Section: Analysis Results */}
+                <div className="w-full" ref={resultsRef}>
+                    {summary ? (
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in-up">
+                            <div className="bg-[#F4F5F7]/50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold text-[#253858] text-lg">Report Summary</h3>
+                                    <p className="text-[#7A869A] text-xs font-medium uppercase tracking-wide">
+                                        Generated by Gemini AI • {new Date().toLocaleDateString()}
                                     </p>
                                 </div>
-                            )}
+                                <div className="flex gap-2">
+                                    <Button variant="ghost" size="sm" className="btn-square" onClick={() => window.print()}><Printer className="w-4 h-4" /></Button>
+                                    <Button variant="ghost" size="sm" className="btn-square"><Share2 className="w-4 h-4" /></Button>
+                                </div>
+                            </div>
+
+                            <div className="p-8">
+                                {/* Status Header */}
+                                <div className="flex items-center justify-between mb-8 pb-6 border-b border-dashed border-slate-200">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-[#00875A] text-white p-2 rounded-lg">
+                                            <CheckCircle className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-xs font-bold text-[#7A869A] uppercase">Analysis Status</div>
+                                            <div className="text-[#00875A] font-bold">SUCCESS</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xs font-bold text-[#7A869A] uppercase">Report Type</div>
+                                        <div className="text-[#253858] font-black text-lg">General</div>
+                                    </div>
+                                </div>
+
+                                {/* Content */}
+                                <div className="prose prose-slate max-w-none">
+                                    <div className="text-[#253858] leading-relaxed whitespace-pre-line" dangerouslySetInnerHTML={{ __html: parseMarkdown(summary) }} />
+                                </div>
+
+                                <div className="mt-8 p-4 bg-[#FFF0B3] border-l-4 border-[#FF991F] rounded-r-lg">
+                                    <p className="text-[#172B4D] text-sm font-medium">
+                                        Disclaimer: This summary is generated by AI for informational purposes. Always consult your doctor for medical advice.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="h-full min-h-[500px] flex flex-col items-center justify-center text-center p-8 bg-white rounded-2xl border border-slate-200 border-dashed">
+                            <div className="w-20 h-20 bg-[#F4F5F7] rounded-full flex items-center justify-center mb-6">
+                                <Sparkles className="w-10 h-10 text-[#7A869A]" />
+                            </div>
+                            <h3 className="text-xl font-bold text-[#253858]">Ready to Summarize</h3>
+                            <p className="text-[#7A869A] max-w-sm mt-2">
+                                Upload a lab report or discharge summary to get an instant AI-powered explanation.
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
     );
+};
+
+// Reuse simple markdown parser
+const parseMarkdown = (text) => {
+    if (!text) return '';
+    let html = text
+        .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-[#0052CC] mt-6 mb-3">$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold text-[#172B4D] mt-8 mb-4 border-b border-slate-200 pb-2">$1</h2>')
+        .replace(/^\*\* (.*$)/gim, '<b>$1</b>')
+        .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>')
+        .replace(/\n\n/gim, '<br/><br/>')
+        .replace(/- (.*$)/gim, '<li class="ml-4 list-disc text-[#42526E]">$1</li>');
+    return html;
 };
 
 export default SummarizeReport;

@@ -239,6 +239,9 @@ const DoctorDashboard = () => {
                 </div>
                 <div className="flex gap-3">
                     <Button variant="outline" onClick={() => setAvailabilityModal(true)}>Manage Availability</Button>
+                    <Button variant="primary" onClick={() => navigate('/doctor/medical-imaging')} className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+                        <Activity size={16} /> AI Imaging
+                    </Button>
                     <Button onClick={fetchData}>Refresh Data</Button>
                     <Button variant="danger" onClick={handleLogout} className="flex items-center gap-2">
                         <LogOut size={16} /> Logout

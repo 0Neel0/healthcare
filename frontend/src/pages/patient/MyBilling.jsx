@@ -146,14 +146,14 @@ const MyBilling = () => {
             <h1 className="text-2xl font-bold text-slate-900">My Billing & Payments</h1>
 
             {/* Display Active Admission Charges (Running Bill) */}
-            {admissions.filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 2).length > 0 && (
+            {admissions.filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 24).length > 0 && (
                 <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-6 mb-6">
                     <h2 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
                         <AlertCircle size={20} /> Current Admission (Running Bill)
                     </h2>
                     <div className="grid grid-cols-1 gap-4">
                         {admissions
-                            .filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 2)
+                            .filter(adm => (new Date() - new Date(adm.admissionDate)) / (1000 * 60 * 60) >= 24)
                             .map((adm, idx) => {
                                 const diffMs = new Date() - new Date(adm.admissionDate);
                                 const diffHours = diffMs / (1000 * 60 * 60);

@@ -17,6 +17,7 @@ import paymentRoutes from "./payment.routes.js"
 
 import messageRoutes from "./message.routes.js";
 import patientDocumentRoutes from "./patientDocument.routes.js";
+import medicalImagingRoutes from "./medical_imaging.routes.js";
 
 routes.use("/user", userRoutes);
 routes.use("/doctors", doctorRoutes);
@@ -33,5 +34,6 @@ routes.use("/payment", paymentRoutes);
 routes.use("/messages", messageRoutes);
 routes.use("/patient-documents", patientDocumentRoutes);
 routes.use("/reports", reportRoutes);
+routes.use("/medical-imaging", medicalImagingRoutes);
 
 export default routes;

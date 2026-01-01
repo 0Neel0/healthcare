@@ -35,6 +35,7 @@ import PatientProfileCompletion from './pages/patient/PatientProfileCompletion';
 
 // Doctor Dashboard
 import DoctorDashboard from './pages/doctor/DoctorDashboard';
+import MedicalImaging from './pages/doctor/MedicalImaging';
 
 import { Toaster } from 'react-hot-toast';
 import { SocketProvider } from './context/SocketContext';
@@ -87,6 +88,14 @@ function App() {
             <ProtectedRoute>
               <ErrorBoundary>
                 <DoctorDashboard />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/doctor/medical-imaging" element={
+            <ProtectedRoute>
+              <ErrorBoundary>
+                <MedicalImaging />
               </ErrorBoundary>
             </ProtectedRoute>
           } />
