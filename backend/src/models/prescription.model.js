@@ -59,6 +59,13 @@ const PrescriptionSchema = new mongoose.Schema({
         default: 'active'
     },
 
+    // Pharmacy Status
+    pharmacyStatus: {
+        type: String,
+        enum: ['pending', 'dispensed', 'partially_dispensed'],
+        default: 'pending'
+    },
+
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });

@@ -33,4 +33,4 @@ EXPOSE 80
 # nginx:alpine's default behavior checks /etc/nginx/templates/*.template
 # and outputs to /etc/nginx/conf.d/default.conf with env substitution if we use the default entrypoint.
 # However, to be explicit and robust:
-CMD ["/bin/sh", "-c", "envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "export PORT=${PORT:-80} && envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]

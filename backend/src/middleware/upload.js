@@ -1,23 +1,8 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import { storage as cloudinaryStorage } from '../config/cloudinary.config.js';
 
-// --- Local Storage for General Documents ---
-const uploadDir = 'uploads';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
-
-const localDiskStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/');
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// --- Cloudinary Storage for General Documents ---
+// We reuse the same storage configuration since it now handles different resource types dynamically.
 
 const docFileFilter = (req, file, cb) => {
     const allowedTypes = [
@@ -33,7 +18,7 @@ const docFileFilter = (req, file, cb) => {
 };
 
 export const upload = multer({
-    storage: localDiskStorage,
+    storage: cloudinaryStorage,
     fileFilter: docFileFilter,
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit for docs
 });

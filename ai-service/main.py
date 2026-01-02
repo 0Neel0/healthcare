@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 import os
@@ -7,25 +8,42 @@ from app.services.text_extractor import PDFTextExtractor
 from app.services.summarizer import GeminiSummarizer
 from app.services.rag_service import RAGService
 from app.services.image_analyzer import MedicalImageAnalyzer
+from app.services.prediction_service import PredictionService
 import requests
 
 # Load env from backend directory
 env_path = os.path.join(os.path.dirname(__file__), '../backend/.env')
-print(f"Loading env from: {os.path.abspath(env_path)}")
+# print(f"Loading env from: {os.path.abspath(env_path)}")
 load_dotenv(env_path)
 
 # Configuration
 API_KEY = os.getenv("GEMINI_API_KEY")
-print(f"API Key Found: {'Yes' if API_KEY else 'No'}")
+# print(f"API Key Found: {'Yes' if API_KEY else 'No'}")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:4000/api") # Node.js Backend
 
 app = FastAPI()
+
+# CORS Configuration
+origins = [
+    "http://localhost:5173", # Vite Frontend
+    "http://localhost:4000", # Backend
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Dependencies
 extractor = PDFTextExtractor()
 summarizer = GeminiSummarizer(api_key=API_KEY) if API_KEY else None
 rag_service = RAGService(api_key=API_KEY) if API_KEY else None
 image_analyzer = MedicalImageAnalyzer(api_key=API_KEY) if API_KEY else None
+predictor = PredictionService()
 
 class JobRequest(BaseModel):
     document_id: str
@@ -35,6 +53,11 @@ class JobRequest(BaseModel):
 class QARequest(BaseModel):
     context: str
     question: str
+
+class RiskRequest(BaseModel):
+    age: int
+    gender: str
+    appointment_type: str
 
 def process_document(job: JobRequest):
     """
@@ -106,6 +129,23 @@ async def analyze_image(file: UploadFile = File(...)):
         print(f"Analysis Failed with Exception: {e}")
         import traceback
         traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Prediction Ednpoints ---
+@app.get("/predictions/inflow")
+async def get_inflow_prediction():
+    try:
+        data = predictor.predict_inflow()
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/predictions/risk")
+async def predict_risk(req: RiskRequest):
+    try:
+        score = predictor.predict_no_show(req.age, req.gender, req.appointment_type)
+        return {"risk_score": score, "level": "High" if score > 70 else "Medium" if score > 30 else "Low"}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")

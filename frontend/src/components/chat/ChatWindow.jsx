@@ -5,7 +5,7 @@ import { useSocket } from '../../context/SocketContext';
 import toast from 'react-hot-toast';
 import VideoCall from './VideoCall';
 
-const ChatWindow = ({ receiverId, receiverName, onClose }) => {
+const ChatWindow = ({ receiverId, receiverName, onClose, embedded = false }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [file, setFile] = useState(null);
@@ -109,7 +109,10 @@ const ChatWindow = ({ receiverId, receiverName, onClose }) => {
                     onClose={() => setInCall(false)}
                 />
             )}
-            <div className="fixed bottom-4 right-4 w-96 h-[500px] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <div className={embedded
+                ? "flex flex-col w-full h-full bg-white rounded-xl shadow-sm border border-slate-200"
+                : "fixed bottom-4 right-4 w-96 h-[500px] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-in slide-in-from-bottom-10 fade-in duration-300"
+            }>
                 {/* Header */}
                 <div className="p-4 bg-slate-900 text-white rounded-t-xl flex justify-between items-center shadow-md">
                     <div className="flex items-center gap-3">
@@ -131,9 +134,12 @@ const ChatWindow = ({ receiverId, receiverName, onClose }) => {
                         >
                             <Video size={18} />
                         </button>
-                        <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded-full transition-colors">
-                            <X size={18} />
-                        </button>
+                        {/* Only show Close button if NOT embedded, or if specific onClose passed */}
+                        {onClose && (
+                            <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded-full transition-colors">
+                                <X size={18} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -158,7 +164,7 @@ const ChatWindow = ({ receiverId, receiverName, onClose }) => {
                                                 {(() => {
                                                     const serverUrl = 'http://localhost:4000';
                                                     const fullUrl = `${serverUrl}${msg.fileUrl}`;
-                                                    return msg.type === 'image' ? (
+                                                    return msg.type === 'image' || (msg.fileUrl && msg.fileUrl.match(/\.(jpg|jpeg|png|gif)$/i)) ? (
                                                         <a href={fullUrl} target="_blank" rel="noopener noreferrer">
                                                             <img
                                                                 src={fullUrl}

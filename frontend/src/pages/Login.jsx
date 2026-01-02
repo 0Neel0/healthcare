@@ -60,7 +60,9 @@ const Login = () => {
                 localStorage.setItem('token', res.token);
                 // Backend now returns standardized 'user' object, fallback to 'patient' for legacy
                 const userData = res.user || res.patient;
-                localStorage.setItem('user', JSON.stringify(userData));
+                // Ensure role is explicitly set for frontend routing
+                const userWithRole = { ...userData, role: 'patient' };
+                localStorage.setItem('user', JSON.stringify(userWithRole));
                 localStorage.setItem('role', 'patient');
 
                 toast.success(`Welcome back, ${userData.name}!`);

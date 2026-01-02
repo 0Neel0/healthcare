@@ -227,7 +227,7 @@ const PatientRecordModal = ({ isOpen, onClose, patientId }) => {
                                             </div>
                                         </div>
                                         <a
-                                            href={`http://localhost:4000${doc.fileUrl}`}
+                                            href={doc.fileUrl.startsWith('http') ? doc.fileUrl : `http://localhost:4000${doc.fileUrl}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors shadow-sm"

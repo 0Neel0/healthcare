@@ -1,5 +1,4 @@
 import { PatientDocument } from "../models/patientDocument.model.js";
-import { storageService } from "../services/StorageService.js";
 import { aiJobService } from "../services/AIJobService.js";
 
 // Upload a new document
@@ -12,18 +11,16 @@ export const uploadDocument = async (req, res) => {
         const { title, description } = req.body;
         const patientId = req.user.id;
 
-        // 1. Secured Storage (Assumed handled by Multer for now, but path validation is via StorageService)
-        const filePath = storageService.getFilePath(req.file.filename);
-        if (!storageService.validateFileExists(req.file.filename)) {
-            return res.status(500).json({ message: "File storage validation failed" });
-        }
+        // 1. Cloudinary Storage (Handled by Multer)
+        // req.file.path contains the secure URL from Cloudinary
+        const fileUrl = req.file.path;
 
         // 2. Persist Metadata with PENDING status
         const newDoc = new PatientDocument({
             patientId,
             title: title || req.file.originalname,
             description,
-            fileUrl: `/uploads/${req.file.filename}`,
+            fileUrl: fileUrl,
             fileType: req.file.mimetype,
             uploadedBy: req.user.id,
             status: 'PENDING'
@@ -32,8 +29,8 @@ export const uploadDocument = async (req, res) => {
         await newDoc.save();
 
         // 3. Async Dispatch to AI Microservice
-        // We do NOT await the result here. Typically this would go to a queue.
-        aiJobService.dispatchJob(newDoc._id, filePath, req.file.mimetype);
+        // We pass the URL (fileUrl) instead of a local path
+        aiJobService.dispatchJob(newDoc._id, fileUrl, req.file.mimetype);
 
         res.status(201).json(newDoc);
 

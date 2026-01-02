@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, CheckCircle, AlertCircle, DollarSign, Activity, Users, Bell, LogOut, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, AlertCircle, DollarSign, Activity, Users, Bell, LogOut, MessageSquare, FileText, Pill } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import appointmentService from '../../services/appointmentService';
 import doctorService from '../../services/doctorService';
@@ -205,23 +205,53 @@ const DoctorDashboard = () => {
             key: 'actions',
             label: 'Actions',
             render: (_, row) => (
-                <div className="flex gap-2">
-                    <button onClick={() => setPatientRecordModal({ isOpen: true, patientId: row.patient?._id })} className="btn-xs btn-outline">Record</button>
-                    {row.status === 'scheduled' && (
-                        <button onClick={() => handleStatusUpdate(row._id, 'ongoing')} className="btn-xs btn-primary-blue">Start</button>
-                    )}
-                    {row.status === 'ongoing' && (
-                        <>
+                <div className="flex items-center gap-2">
+                    {/* Record / EMR Button */}
+                    <button
+                        onClick={() => setPatientRecordModal({ isOpen: true, patientId: row.patient?._id })
+                        }
+                        className="group flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:border-blue-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
+                        title="View Medical Records"
+                    >
+                        <FileText size={14} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                        <span>Record</span>
+                    </button >
+
+                    {/* Start Button (Scheduled) */}
+                    {
+                        row.status === 'scheduled' && (
                             <button
-                                onClick={() => setPrescriptionModal({ isOpen: true, appointment: row })}
-                                className="px-3 py-1 bg-blue-600 text-white rounded-md text-xs font-bold hover:bg-blue-700 shadow-sm transition-colors"
+                                onClick={() => handleStatusUpdate(row._id, 'ongoing')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm active:scale-95"
                             >
-                                Prescribe
+                                <Activity size={14} />
+                                <span>Start</span>
                             </button>
-                            <button onClick={() => handleStatusUpdate(row._id, 'completed')} className="btn-xs btn-success">Complete</button>
-                        </>
-                    )}
-                </div>
+                        )
+                    }
+
+                    {/* Active Actions (Ongoing) */}
+                    {
+                        row.status === 'ongoing' && (
+                            <>
+                                <button
+                                    onClick={() => setPrescriptionModal({ isOpen: true, appointment: row })}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white border border-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-700 hover:shadow-md hover:-translate-y-0.5 transition-all shadow-sm active:scale-95"
+                                >
+                                    <Pill size={14} />
+                                    <span>Prescribe</span>
+                                </button>
+                                <button
+                                    onClick={() => handleStatusUpdate(row._id, 'completed')}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white border border-emerald-500 rounded-lg text-xs font-bold hover:bg-emerald-600 hover:shadow-md hover:-translate-y-0.5 transition-all shadow-sm active:scale-95"
+                                >
+                                    <CheckCircle size={14} />
+                                    <span>Complete</span>
+                                </button>
+                            </>
+                        )
+                    }
+                </div >
             )
         }
     ];
@@ -239,6 +269,9 @@ const DoctorDashboard = () => {
                 </div>
                 <div className="flex gap-3">
                     <Button variant="outline" onClick={() => setAvailabilityModal(true)}>Manage Availability</Button>
+                    <Button variant="outline" onClick={() => navigate('/doctor/schedule')} className="gap-2">
+                        <Calendar size={16} /> Calendar View
+                    </Button>
                     <Button variant="primary" onClick={() => navigate('/doctor/medical-imaging')} className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
                         <Activity size={16} /> AI Imaging
                     </Button>

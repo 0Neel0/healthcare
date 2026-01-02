@@ -435,6 +435,42 @@ const updateBillingStatus = async (req, res, next) => {
     }
 };
 
+
+
+/**
+ * Reschedule an appointment (Doctor-facing)
+ */
+const rescheduleAppointment = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { schedule } = req.body;
+
+        console.log(`[Reschedule] Updating appointment ${id} to ${schedule}`);
+
+        const appointment = await Appointment.findByIdAndUpdate(
+            id,
+            {
+                schedule: new Date(schedule),
+                updatedAt: new Date()
+            },
+            { new: true }
+        ).populate('patient');
+
+        if (!appointment) {
+            return res.status(404).json({ message: 'Appointment not found' });
+        }
+
+        // Notify Admin
+        if (req.io) {
+            req.io.to('admin_room').emit('appointment_updated', appointment);
+        }
+
+        res.json(appointment);
+    } catch (err) {
+        next(err);
+    }
+};
+
 const appointmentController = {
     createAppointment,
     getAppointment,
@@ -449,7 +485,8 @@ const appointmentController = {
     updateStatus,
     updateBillingStatus,
     adminRequestConfirmation,
-    doctorConfirmAppointment
+    doctorConfirmAppointment,
+    rescheduleAppointment
 };
 
 export default appointmentController;

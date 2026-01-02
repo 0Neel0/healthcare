@@ -18,6 +18,7 @@ router.get('/admin/stats', verifyAdminPasskey, appointmentController.getAppointm
 router.patch('/:id/schedule', verifyAdminPasskey, appointmentController.scheduleAppointment);
 router.patch('/:id/cancel', appointmentController.cancelAppointment);
 router.patch('/:id/status', appointmentController.updateStatus); // For doctor workflow
+router.patch('/:id/reschedule', appointmentController.rescheduleAppointment); // For doctor drag-and-drop
 router.patch('/:id/billing', appointmentController.updateBillingStatus); // For doctor billing request
 router.patch('/:id/request-confirmation', verifyAdminPasskey, appointmentController.adminRequestConfirmation); // Admin -> Doctor
 router.patch('/:id/confirm', appointmentController.doctorConfirmAppointment); // Doctor -> Payment Pending

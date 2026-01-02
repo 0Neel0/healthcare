@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Search, AlertTriangle } from 'lucide-react';
+import { Package, Plus, Search, AlertTriangle, Pill } from 'lucide-react';
 import { inventoryService } from '../../services/inventoryService';
 import Button from '../../components/ui/Button';
 
@@ -7,7 +7,7 @@ const Inventory = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [newItem, setNewItem] = useState({ name: '', type: 'Medicine', stock: 0, unit: 'tablets', reorderLevel: 10 });
+    const [newItem, setNewItem] = useState({ name: '', type: 'Medicine', stock: 0, unit: 'tablets', reorderLevel: 10, sellingPrice: 0, batchNumber: '' });
 
     useEffect(() => {
         fetchItems();
@@ -30,7 +30,7 @@ const Inventory = () => {
             await inventoryService.addItem(newItem);
             setShowModal(false);
             fetchItems();
-            setNewItem({ name: '', type: 'Medicine', stock: 0, unit: 'tablets', reorderLevel: 10 });
+            setNewItem({ name: '', type: 'Medicine', stock: 0, unit: 'tablets', reorderLevel: 10, sellingPrice: 0 });
         } catch (error) {
             console.error('Error adding item:', error);
         }
@@ -80,22 +80,41 @@ const Inventory = () => {
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Name</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Type</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Stock</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Unit</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Price/Unit</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Expiry</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
-                                <tr><td colSpan="5" className="text-center py-8 text-slate-500">Loading...</td></tr>
+                                <tr><td colSpan="6" className="text-center py-8 text-slate-500">Loading...</td></tr>
                             ) : items.length === 0 ? (
-                                <tr><td colSpan="5" className="text-center py-8 text-slate-500">No items found</td></tr>
+                                <tr><td colSpan="6" className="text-center py-8 text-slate-500">No items found</td></tr>
                             ) : (
                                 items.map((item) => (
                                     <tr key={item._id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-slate-900">{item.name}</td>
-                                        <td className="px-6 py-4 text-slate-600">{item.type}</td>
-                                        <td className="px-6 py-4 font-semibold text-slate-800">{item.stock}</td>
-                                        <td className="px-6 py-4 text-slate-600">{item.unit}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">
+                                            {item.name}
+                                            {item.batchNumber && <span className="block text-xs text-slate-400">Batch: {item.batchNumber}</span>}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {item.type === 'Medicine' ? (
+                                                <span className="inline-flex items-center gap-1 text-slate-600">
+                                                    <Pill size={14} className="text-blue-500" /> Medicine
+                                                </span>
+                                            ) : (
+                                                <span className="text-slate-600">{item.type}</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 font-semibold text-slate-800">
+                                            {item.stock} <span className="text-xs font-normal text-slate-400">{item.unit}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-800">
+                                            {item.sellingPrice ? `$${item.sellingPrice}` : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 text-sm">
+                                            {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : '-'}
+                                        </td>
                                         <td className="px-6 py-4">
                                             {item.stock <= item.reorderLevel ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -118,7 +137,7 @@ const Inventory = () => {
             {/* Simple Add Item Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto">
                         <h2 className="text-xl font-bold text-slate-900 mb-4">Add New Item</h2>
                         <form onSubmit={handleAddItem} className="space-y-4">
                             <div>
@@ -157,6 +176,53 @@ const Inventory = () => {
                                     />
                                 </div>
                             </div>
+
+                            {/* Medicine Specific Fields */}
+                            {newItem.type === 'Medicine' && (
+                                <div className="p-4 bg-blue-50 rounded-xl space-y-4 border border-blue-100">
+                                    <h3 className="text-xs font-bold text-blue-800 uppercase tracking-wider">Medicine Details</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-blue-700 mb-1">Batch Number</label>
+                                            <input
+                                                type="text"
+                                                className="input-modern text-sm"
+                                                value={newItem.batchNumber || ''}
+                                                onChange={(e) => setNewItem({ ...newItem, batchNumber: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-blue-700 mb-1">Expiry Date</label>
+                                            <input
+                                                type="date"
+                                                className="input-modern text-sm"
+                                                value={newItem.expiryDate || ''}
+                                                onChange={(e) => setNewItem({ ...newItem, expiryDate: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-blue-700 mb-1">Selling Price</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                className="input-modern text-sm"
+                                                value={newItem.sellingPrice || ''}
+                                                onChange={(e) => setNewItem({ ...newItem, sellingPrice: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-blue-700 mb-1">Manufacturer</label>
+                                            <input
+                                                type="text"
+                                                className="input-modern text-sm"
+                                                value={newItem.manufacturer || ''}
+                                                onChange={(e) => setNewItem({ ...newItem, manufacturer: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Stock</label>

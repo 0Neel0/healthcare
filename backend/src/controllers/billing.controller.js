@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Billing } from '../models/billing.model.js';
 import { Appointment } from '../models/appointment.model.js';
 import { Patient } from '../models/patient.model.js';
+import { InsuranceClaim } from '../models/insurance.model.js'; // Import the model
 import * as smsService from '../services/sms.service.js';
 
 /**
@@ -33,14 +34,38 @@ const createBill = async (req, res) => {
             await Appointment.findByIdAndUpdate(appointmentId, { billingStatus: 'generated' });
         }
 
-        // 2. Send Notification (SMS)
-        // Fetch patient to get phone number
+        // 2. Fetch patient details
         const patient = await Patient.findById(patientId);
-        if (patient && patient.phone) {
-            // Requires smsService import
-            // Assuming simplified message for now
-            console.log(`[Billing] Sending SMS to ${patient.phone} for bill ${savedBill._id}`);
-            await smsService.sendBillNotification(patient.phone, totalAmount);
+
+        if (patient) {
+            // Send SMS
+            if (patient.phone) {
+                console.log(`[Billing] Sending SMS to ${patient.phone} for bill ${savedBill._id}`);
+                await smsService.sendBillNotification(patient.phone, totalAmount);
+            }
+
+            // 3. AUTO-INSURANCE CLAIM LOGIC
+            // If patient has insurance info, automatically raise a pending claim
+            if (patient.insuranceProvider && patient.insurancePolicyNumber) {
+                try {
+                    console.log(`[Billing] Auto-generating insurance claim for Patient ${patient.name}`);
+
+                    const servicesList = services.map(s => s.name).join(', ');
+
+                    await InsuranceClaim.create({
+                        patient: patientId,
+                        providerName: patient.insuranceProvider,
+                        policyNumber: patient.insurancePolicyNumber,
+                        diagnosis: notes || `Services: ${servicesList}`, // Fallback diagnosis
+                        claimAmount: totalAmount,
+                        status: 'Pending',
+                        adminNotes: 'Auto-generated via Billing System'
+                    });
+                } catch (err) {
+                    console.error("Failed to auto-create insurance claim:", err);
+                    // Do not fail the request, just log the error
+                }
+            }
         }
 
         res.status(201).json({ success: true, bill: savedBill });

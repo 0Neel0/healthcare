@@ -11,7 +11,11 @@ import {
     BedDouble,
     UserCog,
     BarChart3,
-    LogOut
+    LogOut,
+    Droplet,
+    Pill,
+    TrendingUp,
+    Shield
 } from 'lucide-react';
 import Logo from '../ui/Logo';
 import toast from 'react-hot-toast';
@@ -33,6 +37,9 @@ const Sidebar = () => {
     const menuItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
         { icon: Calendar, label: 'Appointments', path: '/admin/appointments' },
+        { icon: Activity, label: 'Operation Theater', path: '/admin/ot' },
+        { icon: Droplet, label: 'Blood Bank', path: '/admin/blood-bank' },
+        { icon: Pill, label: 'Pharmacy', path: '/admin/pharmacy' },
         { icon: Users, label: 'Patients', path: '/admin/patients' },
         { icon: UserCog, label: 'Doctors', path: '/admin/doctors' },
         { icon: Package, label: 'Inventory', path: '/admin/inventory' },
@@ -40,7 +47,11 @@ const Sidebar = () => {
         { icon: FileText, label: 'EMR / Clinical', path: '/admin/emr' },
         { icon: Activity, label: 'Laboratory', path: '/admin/lab' },
         { icon: BedDouble, label: 'Wards', path: '/admin/wards' },
+        { icon: BedDouble, label: 'Ward Map', path: '/admin/wards-map' },
         { icon: Users, label: 'Staff', path: '/admin/staff' },
+        { icon: Calendar, label: 'Staff Roster', path: '/admin/staff-roster' },
+        { icon: TrendingUp, label: 'AI Analytics', path: '/admin/ai-analytics' },
+        { icon: Shield, label: 'Insurance', path: '/admin/insurance' },
         { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
     ];
 

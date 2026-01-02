@@ -5,7 +5,7 @@ import auth from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.post('/send', auth, upload.single('file'), sendMessage);
+router.post('/', auth, upload.single('file'), sendMessage);
 router.get('/:otherUserId', auth, getMessages);
 
 export default router;

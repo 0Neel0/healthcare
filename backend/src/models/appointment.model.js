@@ -8,6 +8,13 @@ const AppointmentSchema = new mongoose.Schema({
     schedule: { type: Date, required: true },
     reason: { type: String, required: true },
     note: { type: String },
+    prescription: [{
+        medicineName: String,
+        dosage: String,
+        frequency: String,
+        duration: String,
+        instructions: String
+    }],
     consultationFee: { type: Number, default: 0 },
     status: {
         type: String,
@@ -24,6 +31,13 @@ const AppointmentSchema = new mongoose.Schema({
         type: String,
         enum: ['unbilled', 'requested', 'generated'],
         default: 'unbilled'
+    },
+    // Queue Management
+    tokenNumber: { type: Number }, // Daily token
+    queueStatus: {
+        type: String,
+        enum: ['Waiting', 'In Consultation', 'Completed', 'Skipped'],
+        default: 'Waiting'
     },
     transactionId: { type: String },
     createdAt: { type: Date, default: Date.now },

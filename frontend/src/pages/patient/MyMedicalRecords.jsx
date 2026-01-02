@@ -273,7 +273,7 @@ const MyMedicalRecords = () => {
 
                                             <div className="flex items-center gap-2 mt-2">
                                                 <a
-                                                    href={`http://localhost:4000${doc.fileUrl}`}
+                                                    href={doc.fileUrl.startsWith('http') ? doc.fileUrl : `http://localhost:4000${doc.fileUrl}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-100 flex items-center gap-1"

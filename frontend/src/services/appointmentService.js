@@ -91,6 +91,17 @@ export const appointmentService = {
         return response.data;
     },
 
+    /**
+     * Reschedule an appointment (Doctor).
+     * @param {string} id - The ID of the appointment.
+     * @param {string} schedule - The new ISO schedule string.
+     * @returns {Promise<Object>} The updated appointment.
+     */
+    rescheduleAppointment: async (id, schedule) => {
+        const response = await api.patch(`/appointments/${id}/reschedule`, { schedule });
+        return response.data;
+    },
+
     // ==========================================
     // Admin Only Methods
     // ==========================================

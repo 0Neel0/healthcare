@@ -7,13 +7,24 @@ class TextExtractor(ABC):
     def extract_text(self, file_path: str, mime_type: str) -> Optional[str]:
         pass
 
+import requests
+import io
+
 class PDFTextExtractor(TextExtractor):
     def extract_text(self, file_path: str, mime_type: str) -> Optional[str]:
         if "pdf" not in mime_type:
             return None
         
         try:
-            reader = pypdf.PdfReader(file_path)
+            reader = None
+            if file_path.startswith('http'):
+                response = requests.get(file_path)
+                response.raise_for_status()
+                f = io.BytesIO(response.content)
+                reader = pypdf.PdfReader(f)
+            else:
+                reader = pypdf.PdfReader(file_path)
+
             text = ""
             for page in reader.pages:
                 text += page.extract_text() + "\n"

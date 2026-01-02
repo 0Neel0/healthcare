@@ -1,0 +1,26 @@
+# FAST FIX: Enabling Virtualization for Docker
+
+Docker Desktop requires **Hardware Virtualization** to be enabled to run Linux containers.
+
+## 1. Enable in BIOS / UEFI (Requires Restart)
+1.  **Restart your computer**.
+2.  Immediately press the BIOS key repeatedly (usually `F2`, `Del`, `F10`, or `Esc`) before Windows boots.
+3.  Look for a setting named **"Virtualization Technology"**, **"VT-x"**, **"AMD-V"**, or **"SVM Mode"**.
+    - Common locations: *Advanced*, *CPU Configuration*, or *Security*.
+4.  **Enable** it.
+5.  Save & Exit (usually `F10`).
+
+## 2. Enable Windows Features
+If BIOS is already done, ensure Windows features are on:
+1.  Press `Win + R`, type `optionalfeatures`, and hit Enter.
+2.  Ensure these are **CHECKED**:
+    - [x] Hyper-V (if available)
+    - [x] Virtual Machine Platform
+    - [x] Windows Subsystem for Linux
+3.  Click OK and restart if asked.
+
+## 3. Verify in Task Manager
+1.  Press `Ctrl + Shift + Esc` (Task Manager).
+2.  Go to **Performance** tab -> **CPU**.
+3.  Look at the bottom right for **"Virtualization: Enabled"**.
+    - If it says "Disabled", you must go back to Step 1 (BIOS).

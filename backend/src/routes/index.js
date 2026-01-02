@@ -18,6 +18,12 @@ import paymentRoutes from "./payment.routes.js"
 import messageRoutes from "./message.routes.js";
 import patientDocumentRoutes from "./patientDocument.routes.js";
 import medicalImagingRoutes from "./medical_imaging.routes.js";
+import pharmacyRoutes from "./pharmacy.routes.js";
+import bloodBankRoutes from "./bloodBank.routes.js";
+import otRoutes from "./ot.routes.js";
+import queueRoutes from "./queue.routes.js";
+import shiftRoutes from "./shift.routes.js";
+import insuranceRoutes from "./insurance.routes.js";
 
 routes.use("/user", userRoutes);
 routes.use("/doctors", doctorRoutes);
@@ -35,5 +41,11 @@ routes.use("/messages", messageRoutes);
 routes.use("/patient-documents", patientDocumentRoutes);
 routes.use("/reports", reportRoutes);
 routes.use("/medical-imaging", medicalImagingRoutes);
+routes.use("/pharmacy", pharmacyRoutes);
+routes.use("/blood", bloodBankRoutes);
+routes.use("/ot", otRoutes);
+routes.use("/queue", queueRoutes);
+routes.use("/shifts", shiftRoutes);
+routes.use("/insurance", insuranceRoutes);
 
 export default routes;

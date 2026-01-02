@@ -74,6 +74,7 @@ services:
     env_file:
       - .env
     environment:
+      - PORT=8000 # Explicitly set internal port
       # Backend URL (internal docker network)
       - BACKEND_URL=http://backend:4000/api
     volumes:
@@ -96,6 +97,8 @@ services:
       dockerfile: Dockerfile
     container_name: hms_frontend
     restart: unless-stopped
+    environment:
+      - PORT=80
     ports:
       - "5173:80" # Mapping host 5173 to container 80 (Nginx)
     depends_on:
