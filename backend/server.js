@@ -80,7 +80,7 @@ io.on("connection", (socket) => {
 // Make io accessible globally or export it
 export { io };
 
-const PORT = 4000; // Forced to 4000 to avoid .env override and frontend mismatch
+const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
