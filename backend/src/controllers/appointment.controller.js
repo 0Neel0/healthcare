@@ -43,6 +43,44 @@ const createAppointment = async (req, res, next) => {
             doctorUserId = doctorUser?._id;
         }
 
+        // 3. Validation: Check Doctor Availability (Leave Days)
+        if (doctorUserId) {
+            const doctorUser = await User.findById(doctorUserId);
+            // We need to fetch the Doctor model, not just the User model, if availability is stored there.
+            // Based on previous files, User model has minimal info. Doctor model (doctor.model.js) has availability.
+            // Typically User and Doctor are linked or share data. Let's check finding Doctor by user ID or match.
+            // Actually, doctor.model.js seems to be independent or user has ref?
+            // Let's assume we need to look up the Doctor document.
+
+            // Wait, previous code suggests DoctorService fetches by ID. 
+            // Let's try to find the Doctor document by some field. Usually it's linked by user ID or name.
+            // Given the schema in doctor.model.js does not explicitly show a 'userId', it might just match by 'name' or 'email'.
+            // Safest bet for now: Find Doctor by name of the physician.
+
+            const { Doctor } = await import("../models/doctor.model.js"); // Dynamic import to avoid circular dep issues if any
+
+            const doctorDoc = await Doctor.findOne({
+                name: { $regex: new RegExp(`^${primaryPhysician.replace('Dr. ', '')}$`, 'i') }
+            });
+
+            if (doctorDoc && doctorDoc.availability?.outOfOfficeDates) {
+                const appointmentTime = new Date(schedule);
+                const isLeave = doctorDoc.availability.outOfOfficeDates.some(leave => {
+                    const start = new Date(leave.startDate);
+                    start.setUTCHours(0, 0, 0, 0);
+                    const end = new Date(leave.endDate);
+                    end.setUTCHours(23, 59, 59, 999);
+                    return appointmentTime >= start && appointmentTime <= end;
+                });
+
+                if (isLeave) {
+                    return res.status(400).json({
+                        message: `Dr. ${doctorDoc.name} is out of office on this date. Please choose another time.`
+                    });
+                }
+            }
+        }
+
         const appointment = await Appointment.create({
             patient: patient?._id,
             userId,
@@ -350,14 +388,22 @@ const getDoctorAppointments = async (req, res, next) => {
         const { doctorName } = req.params;
         const { date } = req.query;
 
-        let query = { primaryPhysician: doctorName };
+        // Create a regex for flexible matching:
+        // 1. Case-insensitive
+        // 2. Handles with or without "Dr." prefix
+        // 3. Handles optional period after Dr
+        const cleanName = doctorName.replace(/^Dr\.?\s*/i, '').trim();
+        // Regex matches: optional "Dr" or "Dr." + whitespace, followed by the name
+        const nameRegex = new RegExp(`^(Dr\\.?\\s*)?${cleanName}$`, 'i');
+
+        let query = { primaryPhysician: { $regex: nameRegex } };
 
         // Filter by date if provided
         if (date === 'today') {
             const start = new Date();
-            start.setHours(0, 0, 0, 0);
+            start.setUTCHours(0, 0, 0, 0);
             const end = new Date();
-            end.setHours(23, 59, 59, 999);
+            end.setUTCHours(23, 59, 59, 999);
             query.schedule = { $gte: start, $lte: end };
         }
 

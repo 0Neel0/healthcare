@@ -73,9 +73,46 @@ const updateAvailability = async (req, res, next) => {
             });
         }
 
+        // Cancel appointments conflicting with new Out of Office dates
+        if (availabilityData.outOfOfficeDates && availabilityData.outOfOfficeDates.length > 0) {
+            const { Appointment } = await import("../models/appointment.model.js");
+
+            for (const leave of availabilityData.outOfOfficeDates) {
+                const start = new Date(leave.startDate);
+                start.setUTCHours(0, 0, 0, 0);
+                const end = new Date(leave.endDate);
+                end.setUTCHours(23, 59, 59, 999);
+
+                // Find conflicting appointments
+                // Note: primaryPhysician in Appointment usually matches "Dr. Name" or just "Name". 
+                // We should match robustly. The doctor.name is just "Name".
+                const conflicts = await Appointment.find({
+                    primaryPhysician: { $regex: new RegExp(`(Dr\\.?\\s*)?${name}`, 'i') },
+                    schedule: { $gte: start, $lte: end },
+                    status: { $nin: ['cancelled', 'completed'] }
+                });
+
+                if (conflicts.length > 0) {
+                    console.log(`Cancelling ${conflicts.length} appointments for Dr. ${name} due to leave.`);
+
+                    for (const appt of conflicts) {
+                        appt.status = 'cancelled';
+                        appt.cancellationReason = `Doctor on leave: ${leave.reason || 'Unavailable'}`;
+                        appt.updatedAt = new Date();
+                        await appt.save();
+
+                        // Notify via Socket if available
+                        if (req.io) {
+                            req.io.to(`patient_${appt.userId}`).emit('appointment_updated', appt);
+                        }
+                    }
+                }
+            }
+        }
+
         res.json({
             success: true,
-            message: 'Availability updated successfully',
+            message: 'Availability updated successfully. Conflicting appointments rescheduled/cancelled.',
             data: doctor
         });
     } catch (err) {

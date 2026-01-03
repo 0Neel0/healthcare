@@ -200,7 +200,7 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <button
                         onClick={() => navigate('/admin/patients')}
                         className="bg-white border border-[#DFE1E6] rounded-lg p-6 hover:shadow-md transition-all text-left group"
@@ -242,6 +242,21 @@ const AdminDashboard = () => {
                             <div>
                                 <h3 className="font-semibold text-[#253858]">Reports & Analytics</h3>
                                 <p className="text-sm text-[#7A869A]">View system reports</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button
+                        onClick={() => navigate('/admin/schedule')}
+                        className="bg-white border border-[#DFE1E6] rounded-lg p-6 hover:shadow-md transition-all text-left group"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="bg-[#FFF0B3] p-3 rounded-lg group-hover:bg-[#FF991F] transition-colors">
+                                <Calendar className="text-[#FF991F] group-hover:text-white" size={24} />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-[#253858]">Master Schedule</h3>
+                                <p className="text-sm text-[#7A869A]">View all doctor schedules</p>
                             </div>
                         </div>
                     </button>

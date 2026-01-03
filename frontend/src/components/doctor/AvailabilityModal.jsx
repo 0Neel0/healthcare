@@ -1,217 +1,231 @@
-import React, { useState } from 'react';
-import Modal from '../ui/Modal';
-import { Clock, Calendar, Coffee, AlertCircle } from 'lucide-react';
-import doctorService from '../../services/doctorService';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, Trash2, Save, Clock, Calendar as CalendarIcon } from 'lucide-react';
+import Button from '../ui/Button';
 import toast from 'react-hot-toast';
 
-const AvailabilityModal = ({ isOpen, onClose, doctorName, currentAvailability }) => {
-    const [status, setStatus] = useState(currentAvailability?.status || 'active');
-    const [schedule, setSchedule] = useState(currentAvailability?.schedule || []);
-    const [breakTimes, setBreakTimes] = useState(currentAvailability?.breakTimes || []);
-    const [saving, setSaving] = useState(false);
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const AvailabilityModal = ({ isOpen, onClose, initialAvailability, onSave, isLoading }) => {
+    const [schedule, setSchedule] = useState([]);
+    const [outOfOfficeDates, setOutOfOfficeDates] = useState([]);
+    const [activeTab, setActiveTab] = useState('weekly'); // 'weekly' or 'leaves'
 
-    const toggleDay = (day) => {
-        const existing = schedule.find(s => s.day === day);
-        if (existing) {
-            setSchedule(schedule.filter(s => s.day !== day));
-        } else {
-            setSchedule([...schedule, { day, startTime: '09:00', endTime: '17:00', isAvailable: true }]);
+    useEffect(() => {
+        if (isOpen && initialAvailability) {
+            // Initialize schedule from props or default
+            const initializedSchedule = DAYS.map(day => {
+                const existing = initialAvailability.schedule?.find(s => s.day === day);
+                return existing || {
+                    day,
+                    startTime: '09:00',
+                    endTime: '17:00',
+                    isAvailable: ['Saturday', 'Sunday'].includes(day) ? false : true
+                };
+            });
+            setSchedule(initializedSchedule);
+
+            // Initialize leaves
+            setOutOfOfficeDates(initialAvailability.outOfOfficeDates?.map(d => ({
+                ...d,
+                startDate: d.startDate.split('T')[0],
+                endDate: d.endDate.split('T')[0]
+            })) || []);
         }
+    }, [isOpen, initialAvailability]);
+
+    const handleScheduleChange = (index, field, value) => {
+        const newSchedule = [...schedule];
+        newSchedule[index] = { ...newSchedule[index], [field]: value };
+        setSchedule(newSchedule);
     };
 
-    const updateDayTime = (day, field, value) => {
-        setSchedule(schedule.map(s =>
-            s.day === day ? { ...s, [field]: value } : s
-        ));
+    const handleAddLeave = () => {
+        setOutOfOfficeDates([...outOfOfficeDates, { startDate: '', endDate: '', reason: '' }]);
     };
 
-    const addBreak = () => {
-        setBreakTimes([...breakTimes, { startTime: '12:00', endTime: '13:00', description: 'Lunch' }]);
+    const handleLeaveChange = (index, field, value) => {
+        const newLeaves = [...outOfOfficeDates];
+        newLeaves[index] = { ...newLeaves[index], [field]: value };
+        setOutOfOfficeDates(newLeaves);
     };
 
-    const removeBreak = (index) => {
-        setBreakTimes(breakTimes.filter((_, i) => i !== index));
+    const handleRemoveLeave = (index) => {
+        const newLeaves = outOfOfficeDates.filter((_, i) => i !== index);
+        setOutOfOfficeDates(newLeaves);
     };
 
-    const updateBreak = (index, field, value) => {
-        setBreakTimes(breakTimes.map((b, i) =>
-            i === index ? { ...b, [field]: value } : b
-        ));
-    };
+    const handleSave = () => {
+        // Validation
+        const validSchedule = schedule.map(s => ({
+            day: s.day,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            isAvailable: s.isAvailable
+        }));
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+        const validLeaves = outOfOfficeDates.filter(l => l.startDate && l.endDate);
 
-        try {
-            setSaving(true);
-
-            const availabilityData = {
-                status,
-                schedule,
-                breakTimes,
-                outOfOfficeDates: currentAvailability?.outOfOfficeDates || []
-            };
-
-            await doctorService.updateAvailability(doctorName, availabilityData);
-            toast.success('Availability updated successfully');
-            onClose();
-        } catch (error) {
-            console.error('Error updating availability:', error);
-            toast.error('Failed to update availability');
-        } finally {
-            setSaving(false);
-        }
+        onSave({
+            schedule: validSchedule,
+            outOfOfficeDates: validLeaves
+        });
     };
 
     if (!isOpen) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Manage Availability" size="lg">
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Current Status */}
-                <div>
-                    <label className="block text-sm font-semibold text-[#253858] mb-3">Current Status</label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {[
-                            { value: 'active', label: 'Active', color: 'bg-[#E3FCEF] border-[#ABF5D1] text-[#006644]' },
-                            { value: 'break', label: 'On Break', color: 'bg-[#FFF0B3] border-[#FF991F] text-[#974F0C]' },
-                            { value: 'away', label: 'Away', color: 'bg-[#FFEBE6] border-[#FF8F73] text-[#BF2600]' },
-                            { value: 'offline', label: 'Offline', color: 'bg-[#F4F5F7] border-[#DFE1E6] text-[#42526E]' }
-                        ].map(({ value, label, color }) => (
-                            <button
-                                key={value}
-                                type="button"
-                                onClick={() => setStatus(value)}
-                                className={`px-4 py-3 border-2 rounded-lg font-semibold text-sm transition-all ${status === value ? color : 'bg-white border-[#DFE1E6] text-[#7A869A]'
-                                    }`}
-                            >
-                                {label}
-                            </button>
-                        ))}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-slate-100">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800">Manage Availability</h2>
+                        <p className="text-sm text-slate-500">Set your weekly working hours and leave dates</p>
                     </div>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <X size={20} className="text-slate-500" />
+                    </button>
                 </div>
 
-                {/* Weekly Schedule */}
-                <div>
-                    <label className="block text-sm font-semibold text-[#253858] mb-3 flex items-center gap-2">
-                        <Calendar size={16} className="text-[#0052CC]" />
+                {/* Tabs */}
+                <div className="flex border-b border-slate-100 px-6">
+                    <button
+                        onClick={() => setActiveTab('weekly')}
+                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'weekly' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                    >
                         Weekly Schedule
-                    </label>
-                    <div className="space-y-2">
-                        {daysOfWeek.map(day => {
-                            const daySchedule = schedule.find(s => s.day === day);
-                            const isActive = !!daySchedule;
-
-                            return (
-                                <div key={day} className="flex items-center gap-3 bg-[#F4F5F7] rounded-lg p-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={isActive}
-                                        onChange={() => toggleDay(day)}
-                                        className="w-4 h-4 text-[#0052CC] rounded focus:ring-[#0052CC]"
-                                    />
-                                    <span className={`w-24 text-sm font-semibold ${isActive ? 'text-[#253858]' : 'text-[#7A869A]'}`}>
-                                        {day}
-                                    </span>
-                                    {isActive && (
-                                        <div className="flex items-center gap-2 flex-1">
-                                            <input
-                                                type="time"
-                                                value={daySchedule.startTime}
-                                                onChange={(e) => updateDayTime(day, 'startTime', e.target.value)}
-                                                className="px-3 py-1.5 border border-[#DFE1E6] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#0052CC] bg-white"
-                                            />
-                                            <span className="text-[#7A869A]">to</span>
-                                            <input
-                                                type="time"
-                                                value={daySchedule.endTime}
-                                                onChange={(e) => updateDayTime(day, 'endTime', e.target.value)}
-                                                className="px-3 py-1.5 border border-[#DFE1E6] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#0052CC] bg-white"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('leaves')}
+                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'leaves' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Out of Office / Leaves
+                    </button>
                 </div>
 
-                {/* Break Times */}
-                <div>
-                    <div className="flex items-center justify-between mb-3">
-                        <label className="text-sm font-semibold text-[#253858] flex items-center gap-2">
-                            <Coffee size={16} className="text-[#0052CC]" />
-                            Break Times
-                        </label>
-                        <button
-                            type="button"
-                            onClick={addBreak}
-                            className="px-3 py-1 text-xs bg-[#0052CC] text-white rounded-md hover:bg-[#003D99] transition-colors"
-                        >
-                            Add Break
-                        </button>
-                    </div>
+                {/* Content */}
+                <div className="overflow-y-auto p-6 flex-grow">
+                    {activeTab === 'weekly' ? (
+                        <div className="space-y-4">
+                            {schedule.map((slot, index) => (
+                                <div key={slot.day} className={`flex items-center gap-4 p-3 rounded-lg border ${slot.isAvailable ? 'bg-white border-slate-200' : 'bg-slate-50 border-slate-100'} transition-colors`}>
+                                    <div className="w-32 flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id={`day-${index}`}
+                                            checked={slot.isAvailable}
+                                            onChange={(e) => handleScheduleChange(index, 'isAvailable', e.target.checked)}
+                                            className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                                        />
+                                        <label htmlFor={`day-${index}`} className={`font-medium ${slot.isAvailable ? 'text-slate-700' : 'text-slate-400'}`}>
+                                            {slot.day}
+                                        </label>
+                                    </div>
 
-                    {breakTimes.length > 0 ? (
-                        <div className="space-y-2">
-                            {breakTimes.map((breakTime, index) => (
-                                <div key={index} className="flex items-center gap-3 bg-[#FFF0B3]/20 border border-[#FFF0B3] rounded-lg p-3">
-                                    <input
-                                        type="time"
-                                        value={breakTime.startTime}
-                                        onChange={(e) => updateBreak(index, 'startTime', e.target.value)}
-                                        className="px-3 py-1.5 border border-[#DFE1E6] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#0052CC] bg-white"
-                                    />
-                                    <span className="text-[#7A869A]">to</span>
-                                    <input
-                                        type="time"
-                                        value={breakTime.endTime}
-                                        onChange={(e) => updateBreak(index, 'endTime', e.target.value)}
-                                        className="px-3 py-1.5 border border-[#DFE1E6] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#0052CC] bg-white"
-                                    />
-                                    <input
-                                        type="text"
-                                        value={breakTime.description}
-                                        onChange={(e) => updateBreak(index, 'description', e.target.value)}
-                                        placeholder="Description"
-                                        className="flex-1 px-3 py-1.5 border border-[#DFE1E6] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#0052CC] bg-white"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeBreak(index)}
-                                        className="text-[#DE350B] hover:bg-[#FFEBE6] p-2 rounded transition-colors"
-                                    >
-                                        <AlertCircle size={16} />
-                                    </button>
+                                    {slot.isAvailable ? (
+                                        <div className="flex items-center gap-3 flex-grow animate-fade-in">
+                                            <div className="relative">
+                                                <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    type="time"
+                                                    value={slot.startTime}
+                                                    onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)}
+                                                    className="pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-32"
+                                                />
+                                            </div>
+                                            <span className="text-slate-400 text-sm">to</span>
+                                            <div className="relative">
+                                                <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    type="time"
+                                                    value={slot.endTime}
+                                                    onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)}
+                                                    className="pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-32"
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <span className="text-sm text-slate-400 italic">Unavailable</span>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-[#7A869A] italic bg-[#F4F5F7] rounded-lg p-3">No breaks scheduled</p>
+                        <div className="space-y-6">
+                            <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl text-blue-800 text-sm">
+                                Add dates when you will be unavailable. Appointments cannot be booked on these days.
+                            </div>
+
+                            <div className="space-y-3">
+                                {outOfOfficeDates.map((leave, index) => (
+                                    <div key={index} className="flex flex-col md:flex-row gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 relative group">
+                                        <div className="flex-1 space-y-1">
+                                            <label className="text-xs font-semibold text-slate-500 uppercase">From</label>
+                                            <input
+                                                type="date"
+                                                value={leave.startDate}
+                                                onChange={(e) => handleLeaveChange(index, 'startDate', e.target.value)}
+                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+                                            />
+                                        </div>
+                                        <div className="flex-1 space-y-1">
+                                            <label className="text-xs font-semibold text-slate-500 uppercase">To</label>
+                                            <input
+                                                type="date"
+                                                value={leave.endDate}
+                                                onChange={(e) => handleLeaveChange(index, 'endDate', e.target.value)}
+                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+                                            />
+                                        </div>
+                                        <div className="flex-[2] space-y-1">
+                                            <label className="text-xs font-semibold text-slate-500 uppercase">Reason (Optional)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Vacation, Conference"
+                                                value={leave.reason}
+                                                onChange={(e) => handleLeaveChange(index, 'reason', e.target.value)}
+                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => handleRemoveLeave(index)}
+                                            className="self-end md:self-center p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                            title="Remove"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={handleAddLeave}
+                                className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:border-indigo-500 hover:text-indigo-600 transition-all flex items-center justify-center gap-2 font-medium"
+                            >
+                                <Plus size={18} /> Add Leave Period
+                            </button>
+                        </div>
                     )}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-[#DFE1E6]">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="flex-1 px-4 py-2 border border-[#DFE1E6] text-[#42526E] rounded-lg hover:bg-[#F4F5F7] transition-colors font-semibold"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className="flex-1 px-4 py-2 bg-[#0052CC] text-white rounded-lg hover:bg-[#003D99] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
+                {/* Footer */}
+                <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 glass">
+                    <Button variant="ghost" onClick={onClose} disabled={isLoading}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={isLoading} className="gap-2">
+                        {isLoading ? (
+                            <>
+                                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save size={18} /> Save Settings
+                            </>
+                        )}
+                    </Button>
                 </div>
-            </form>
-        </Modal>
+            </div>
+        </div>
     );
 };
 

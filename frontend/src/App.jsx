@@ -25,6 +25,7 @@ import PredictiveAnalytics from './pages/admin/PredictiveAnalytics';
 import QueueDisplay from './pages/public/QueueDisplay';
 import InsuranceDashboard from './pages/admin/InsuranceDashboard';
 import WardMap from './pages/admin/WardMap';
+import AdminScheduler from './pages/admin/AdminScheduler';
 
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -156,6 +157,7 @@ function App() {
             <Route path="emr" element={<EMR />} />
             <Route path="reports" element={<Reports />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="schedule" element={<AdminScheduler />} />
           </Route>
         </Routes>
       </Router>

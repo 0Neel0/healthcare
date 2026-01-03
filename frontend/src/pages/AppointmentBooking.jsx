@@ -11,6 +11,7 @@ import patientService from '../services/patientService';
 import appointmentService from '../services/appointmentService';
 import Footer from '../components/layout/Footer';
 import api from '../services/api';
+import doctorService from '../services/doctorService';
 
 const AppointmentBooking = () => {
     const navigate = useNavigate();
@@ -43,9 +44,9 @@ const AppointmentBooking = () => {
     const fetchDoctors = async () => {
         try {
             setFetchingDoctors(true);
-            const response = await api.get('/user/doctors');
-            setDoctorObjects(response.data); // Store full objects
-            const formattedDoctors = response.data.map(doctor => `Dr. ${doctor.name}`);
+            const data = await doctorService.getDoctors();
+            setDoctorObjects(data || []);
+            const formattedDoctors = (data || []).map(doctor => `Dr. ${doctor.name}`);
             setDoctors(formattedDoctors);
         } catch (err) {
             console.error('Error fetching doctors:', err);
@@ -334,18 +335,40 @@ const AppointmentBooking = () => {
                             )}
 
                             <div>
-                                <FormField
-                                    label="Appointment Date & Time"
-                                    type="datepicker"
-                                    name="schedule"
-                                    control={control}
-                                    error={errors.schedule}
-                                    required
-                                    minDate={new Date()}
-                                    showTimeSelect
-                                    dateFormat="MM/dd/yyyy h:mm aa"
-                                    placeholder="Select Date & Time"
-                                />
+                                {(() => {
+                                    // Logic to find selected doctor and their leave dates
+                                    const selectedDocName = watch('primaryPhysician');
+                                    const selectedDoc = doctorObjects.find(d => `Dr. ${d.name}` === selectedDocName);
+                                    let excludeDates = [];
+
+                                    if (selectedDoc && selectedDoc.availability?.outOfOfficeDates) {
+                                        selectedDoc.availability.outOfOfficeDates.forEach(range => {
+                                            let current = new Date(range.startDate);
+                                            const end = new Date(range.endDate);
+
+                                            while (current <= end) {
+                                                excludeDates.push(new Date(current));
+                                                current.setDate(current.getDate() + 1);
+                                            }
+                                        });
+                                    }
+
+                                    return (
+                                        <FormField
+                                            label="Appointment Date & Time"
+                                            type="datepicker"
+                                            name="schedule"
+                                            control={control}
+                                            error={errors.schedule}
+                                            required
+                                            minDate={new Date()}
+                                            excludeDates={excludeDates}
+                                            showTimeSelect
+                                            dateFormat="MM/dd/yyyy h:mm aa"
+                                            placeholder={selectedDoc ? `Select Date (Dr. ${selectedDoc.name})` : "Select Date"}
+                                        />
+                                    );
+                                })()}
                                 <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                                     <Clock size={14} />
                                     Available: Monday-Friday, 9:00 AM - 5:00 PM (at least 1 hour from now)
@@ -370,6 +393,9 @@ const AppointmentBooking = () => {
                                 register={register}
                                 error={errors.note}
                             />
+
+                            {/* Hidden field for datepicker excluded dates logic validation if needed, 
+                                but DatePicker component handles visual blocking. */}
 
                             <div className="pt-4">
                                 <Button
