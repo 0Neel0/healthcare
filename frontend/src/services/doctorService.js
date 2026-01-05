@@ -25,6 +25,22 @@ export const doctorService = {
             params: { period }
         });
         return response.data;
+    },
+
+    // AI Disease Prediction
+    predictDisease: async (symptoms) => {
+        const response = await api.post('/doctors/predict-disease', { symptoms });
+        return response.data;
+    },
+
+    // AI Image Analysis
+    analyzeImage: async (formData) => {
+        const response = await api.post('/doctors/analyze-image', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
     }
 };
 

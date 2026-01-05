@@ -148,6 +148,19 @@ async def predict_risk(req: RiskRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class DiseasePredictionRequest(BaseModel):
+    symptoms: str
+
+@app.post("/predictions/disease-custom")
+async def predict_disease_custom(req: DiseasePredictionRequest):
+    try:
+        result = predictor.predict_disease_ml(req.symptoms)
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/health")
 def health_check():
     return {"status": "ok", "python_version": "3.x"}

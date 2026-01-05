@@ -25,6 +25,9 @@ import queueRoutes from "./queue.routes.js";
 import shiftRoutes from "./shift.routes.js";
 import insuranceRoutes from "./insurance.routes.js";
 
+
+import googleRoutes from "./google.routes.js";
+
 routes.use("/user", userRoutes);
 routes.use("/doctors", doctorRoutes);
 routes.use("/patients", patientRoutes);
@@ -47,5 +50,7 @@ routes.use("/ot", otRoutes);
 routes.use("/queue", queueRoutes);
 routes.use("/shifts", shiftRoutes);
 routes.use("/insurance", insuranceRoutes);
+routes.use("/google", googleRoutes);
+
 
 export default routes;

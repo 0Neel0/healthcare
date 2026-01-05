@@ -7,3 +7,6 @@ requests
 python-dotenv
 numpy
 Pillow
+scikit-learn
+pandas
+joblib

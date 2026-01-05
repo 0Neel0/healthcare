@@ -77,7 +77,7 @@ const CustomToolbar = ({ date, onNavigate, onView, view }) => {
                             : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
                             }`}
                     >
-                        {v}
+                        {v === 'agenda' ? 'Timetable' : v}
                     </button>
                 ))}
             </div>
@@ -100,7 +100,10 @@ const AdminScheduler = () => {
     const [selectedPatientId, setSelectedPatientId] = useState(null);
 
     // Persistence for View/Date specific to Admin
-    const [view, setView] = useState(() => localStorage.getItem('adminCalendarView') || 'week');
+    const [view, setView] = useState(() => {
+        const savedView = localStorage.getItem('adminCalendarView') || 'week';
+        return savedView === 'timetable' ? 'agenda' : savedView;
+    });
     const [date, setDate] = useState(() => {
         const savedDate = localStorage.getItem('adminCalendarDate');
         return savedDate ? new Date(savedDate) : new Date();

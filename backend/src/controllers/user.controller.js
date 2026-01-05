@@ -44,6 +44,9 @@ const googleLogin = async (req, res, next) => {
 
         // 4. Generate Token
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+        console.log('Google Login Success:', { email, name, role: user.role }); // Debug log
+
         res.json({ token, user });
 
     } catch (err) {

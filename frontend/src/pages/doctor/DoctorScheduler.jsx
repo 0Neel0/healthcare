@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import format from 'date-fns/format';
@@ -12,8 +12,10 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import appointmentService from '../../services/appointmentService';
 import doctorService from '../../services/doctorService';
+import googleService from '../../services/googleService';
 import PatientRecordModal from '../../components/doctor/PatientRecordModal';
 import AvailabilityModal from '../../components/doctor/AvailabilityModal';
+
 import {
     ArrowLeft, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalIcon,
     Clock, User, Settings, Info, Briefcase
@@ -142,6 +144,8 @@ const DoctorScheduler = () => {
         }
     });
 
+    const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+
     const [loading, setLoading] = useState(true);
     const [selectedPatientId, setSelectedPatientId] = useState(null);
     const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
@@ -162,10 +166,11 @@ const DoctorScheduler = () => {
         try {
             setLoading(true);
             console.log(`Fetching appointments for: "${doctorName}"`);
-            const data = await appointmentService.getDoctorAppointments(doctorName);
-            console.log(`Fetched ${data?.length} appointments from server.`);
 
-            const calendarEvents = data
+            // 1. Fetch HMS Appointments
+            const hmsData = await appointmentService.getDoctorAppointments(doctorName);
+
+            let allEvents = hmsData
                 .filter(app => app.status !== 'cancelled')
                 .map(app => ({
                     id: app._id,
@@ -173,19 +178,32 @@ const DoctorScheduler = () => {
                     start: new Date(app.schedule),
                     end: new Date(new Date(app.schedule).getTime() + 30 * 60000), // Default 30 mins
                     resource: app,
-                    allDay: false
+                    allDay: false,
+                    isGoogle: false
                 }));
 
-            // Safety Latch: Prevent auto-wipe
-            // If automatic sync returns 0 items but we have local data, assume sync failure/mismatch and abort.
-            if (!isManual && calendarEvents.length === 0 && events.length > 0) {
-                console.warn("Auto-sync returned 0 items. Aborting overwrite to preserve cache.");
-                toast.error("Sync incomplete. Keeping local data.");
-                return;
+            // 2. Fetch Google Calendar Events (if connected)
+            if (isGoogleConnected) {
+                try {
+                    const googleData = await googleService.getGoogleEvents(user.id || user._id);
+                    const googleEvents = googleData.map(ev => ({
+                        id: ev.id,
+                        title: `📅 ${ev.title}`,
+                        start: new Date(ev.start),
+                        end: new Date(ev.end),
+                        allDay: ev.allDay,
+                        resource: { reason: 'Google Event', status: 'google', link: ev.htmlLink },
+                        isGoogle: true
+                    }));
+                    console.log(`Fetched ${googleEvents.length} Google events`);
+                    allEvents = [...allEvents, ...googleEvents];
+                } catch (gErr) {
+                    console.error("Failed to fetch Google events", gErr);
+                }
             }
 
-            setEvents(calendarEvents);
-            localStorage.setItem('doctorAppointments', JSON.stringify(calendarEvents));
+            setEvents(allEvents);
+            localStorage.setItem('doctorAppointments', JSON.stringify(allEvents));
             if (isManual) toast.success("Calendar synced successfully");
 
         } catch (error) {
@@ -194,7 +212,7 @@ const DoctorScheduler = () => {
         } finally {
             setLoading(false);
         }
-    }, [doctorName, events.length]); // Added events.length dependency for safety check
+    }, [doctorName, events.length, isGoogleConnected, user.id, user._id]);
 
     const fetchDoctorDetails = useCallback(async () => {
         try {
@@ -226,10 +244,12 @@ const DoctorScheduler = () => {
             }
 
             if (foundDoctor && foundDoctor.availability) {
-                // Merge availability to prevent loss of specialized local settings if server is partial
-                // For now, strict server sync is safer for availability.
                 setDoctorAvailability(foundDoctor.availability);
                 localStorage.setItem('doctorAvailability', JSON.stringify(foundDoctor.availability));
+            }
+
+            if (foundDoctor) {
+                setIsGoogleConnected(!!foundDoctor.googleCalendar?.isConnected);
             }
         } catch (error) {
             console.error("Failed to fetch doctor details", error);
@@ -281,7 +301,59 @@ const DoctorScheduler = () => {
         };
     }, [socket, doctorName, fetchAppointments]);
 
+    // Handle Google Auth Code Return
+    const processingRef = useRef(false);
+
+    useEffect(() => {
+        const queryParams = new URLSearchParams(window.location.search);
+        const code = queryParams.get('code');
+        const docId = user?.id || user?._id;
+
+        if (code && docId && !isGoogleConnected && !processingRef.current) {
+            processingRef.current = true; // Mark as processing immediately
+
+            const linkGoogle = async () => {
+                const toastId = toast.loading('Linking Google Calendar...');
+                try {
+                    await googleService.connectGoogle(code, docId);
+                    setIsGoogleConnected(true);
+                    toast.success('Google Calendar Connected!', { id: toastId });
+                } catch (error) {
+                    console.error("Google Link Error", error);
+                    const msg = error.response?.data?.message || 'Failed to link Google Calendar';
+                    toast.error(msg, { id: toastId });
+                } finally {
+                    processingRef.current = false;
+                    // Always remove code to prevent loop
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            };
+            linkGoogle();
+        }
+    }, [isGoogleConnected, user]);
+
     // --- Event Handlers ---
+
+    const handleGoogleSync = async () => {
+        if (isGoogleConnected) {
+            if (window.confirm("Disconnect Google Calendar?")) {
+                try {
+                    await googleService.disconnectGoogle(user.id || user._id);
+                    setIsGoogleConnected(false);
+                    toast.success("Disconnected from Google Calendar");
+                } catch (err) {
+                    toast.error("Failed to disconnect");
+                }
+            }
+        } else {
+            try {
+                const { url } = await googleService.getAuthUrl();
+                window.location.href = url; // Redirect to Google
+            } catch (error) {
+                toast.error("Could not start Google Auth");
+            }
+        }
+    };
 
     const updateAppointmentSchedule = useCallback(async (event, start, end) => {
         try {
@@ -523,6 +595,33 @@ const DoctorScheduler = () => {
                             <Clock size={14} /> Availability
                         </button>
                     </div>
+
+                    <Button
+                        onClick={handleGoogleSync}
+                        variant="ghost"
+                        className={`h-10 px-4 gap-2 flex items-center justify-center rounded-xl border transition-all ${isGoogleConnected
+                            ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                    >
+                        <img src="https://www.google.com/favicon.ico" alt="G" className="w-4 h-4" />
+                        <span className="font-semibold text-sm hidden sm:inline">
+                            {isGoogleConnected ? 'Synced' : 'Sync Google'}
+                        </span>
+                    </Button>
+
+                    {isGoogleConnected && (
+                        <Button
+                            onClick={() => window.open('https://calendar.google.com', '_blank')}
+                            variant="ghost"
+                            className="h-10 px-4 gap-2 flex items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all"
+                            title="Open Google Calendar in new tab"
+                        >
+                            <CalIcon size={16} />
+                            <span className="font-semibold text-sm hidden sm:inline">Open Calendar</span>
+                        </Button>
+                    )}
+
+
                     <Button
                         onClick={() => {
                             // Manual Sync: We allow overwriting even if empty (user intent)
@@ -558,6 +657,14 @@ const DoctorScheduler = () => {
 
                         // Interaction
                         onSelectEvent={(event) => {
+                            if (event.isGoogle && event.resource?.link) {
+                                const newWindow = window.open(event.resource.link, '_blank');
+                                if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                                    toast.error("Pop-up blocked! Please allow pop-ups for this site.");
+                                    // Fallback: Try redirecting or showing a link in a toast
+                                }
+                                return;
+                            }
                             if (event.resource?.patient?._id) setSelectedPatientId(event.resource.patient._id);
                         }}
                         onEventDrop={handleEventDrop}
@@ -600,6 +707,11 @@ const DoctorScheduler = () => {
                                                 <div>
                                                     <span className="font-bold text-slate-700">{event.resource.patient?.name}</span>
                                                     <span className="text-xs text-slate-400 block">{event.resource.reason}</span>
+                                                    {event.isGoogle && (
+                                                        <a href={event.resource.link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
+                                                            View in Google Calendar
+                                                        </a>
+                                                    )}
                                                 </div>
                                             </>
                                         )}

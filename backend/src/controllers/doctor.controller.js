@@ -180,6 +180,45 @@ const getStats = async (req, res, next) => {
     }
 };
 
+// Predict Disease (AI)
+const predictDisease = async (req, res, next) => {
+    try {
+        const { symptoms } = req.body;
+        if (!symptoms) return res.status(400).json({ message: "Symptoms required" });
+
+        // Dynamic import to avoid circular dependency issues if any
+        const { aiJobService } = await import('../services/AIJobService.js');
+        const result = await aiJobService.predictDiseaseML(symptoms);
+        res.json(result);
+    } catch (error) {
+        console.error("Prediction Error:", error);
+        res.status(500).json({ message: "Prediction failed" });
+    }
+};
+
+// Analyze Image (AI)
+const analyzeImage = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No image file provided" });
+        }
+
+        const { aiJobService } = await import('../services/AIJobService.js');
+
+        // Construct FormData for the Python service
+        const formData = new FormData();
+        // Create a blob-like object or stream from the buffer
+        const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+        formData.append('file', blob, req.file.originalname);
+
+        const result = await aiJobService.analyzeImage(formData);
+        res.json(result);
+    } catch (error) {
+        console.error("Image Analysis Error:", error);
+        res.status(500).json({ message: "Image analysis failed" });
+    }
+};
+
 const doctorController = {
     createDoctor,
     getDoctor,
@@ -187,7 +226,9 @@ const doctorController = {
     updateDoctor,
     deleteDoctor,
     updateAvailability,
-    getStats
+    getStats,
+    predictDisease,
+    analyzeImage
 }
 
 export default doctorController;

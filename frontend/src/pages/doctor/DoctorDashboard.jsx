@@ -14,6 +14,7 @@ import AvailabilityModal from '../../components/doctor/AvailabilityModal';
 import PatientRecordModal from '../../components/doctor/PatientRecordModal';
 import PrescriptionModal from '../../components/doctor/PrescriptionModal';
 import ChatWindow from '../../components/chat/ChatWindow';
+import DiseasePredictorModal from '../../components/doctor/DiseasePredictorModal';
 
 const DoctorDashboard = () => {
     const navigate = useNavigate();
@@ -31,6 +32,7 @@ const DoctorDashboard = () => {
     const [consultationFee, setConsultationFee] = useState(500);
     const [patientRecordModal, setPatientRecordModal] = useState({ isOpen: false, patientId: null });
     const [prescriptionModal, setPrescriptionModal] = useState({ isOpen: false, appointment: null, patient: null });
+    const [isPredictorOpen, setIsPredictorOpen] = useState(false);
     const [patientSearch, setPatientSearch] = useState('');
     const [activities, setActivities] = useState([
         { id: 1, type: 'info', message: 'Welcome to your dashboard', time: new Date() }
@@ -272,8 +274,8 @@ const DoctorDashboard = () => {
                     <Button variant="outline" onClick={() => navigate('/doctor/schedule')} className="gap-2">
                         <Calendar size={16} /> Calendar View
                     </Button>
-                    <Button variant="primary" onClick={() => navigate('/doctor/medical-imaging')} className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
-                        <Activity size={16} /> AI Imaging
+                    <Button variant="primary" onClick={() => setIsPredictorOpen(true)} className="gap-2 bg-purple-600 hover:bg-purple-700 text-white">
+                        <Activity size={16} /> AI Predictor
                     </Button>
                     <Button onClick={fetchData}>Refresh Data</Button>
                     <Button variant="danger" onClick={handleLogout} className="flex items-center gap-2">
@@ -595,6 +597,11 @@ const DoctorDashboard = () => {
                     </div>
                 </form>
             </Modal>
+
+            <DiseasePredictorModal
+                isOpen={isPredictorOpen}
+                onClose={() => setIsPredictorOpen(false)}
+            />
         </div >
     );
 };

@@ -44,6 +44,15 @@ const DoctorSchema = new mongoose.Schema({
             endDate: Date,
             reason: String
         }]
+    }, // Closed availability
+
+    // Google Calendar Sync
+    googleCalendar: {
+        accessToken: String,
+        refreshToken: String,
+        tokenExpiry: Date,
+        calendarId: { type: String, default: 'primary' },
+        isConnected: { type: Boolean, default: false }
     },
 
     // Revenue Tracking

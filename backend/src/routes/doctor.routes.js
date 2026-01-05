@@ -14,5 +14,10 @@ doctorRoutes.delete("/:id", auth, adminOnly, doctorController.deleteDoctor);
 // Availability and stats routes
 doctorRoutes.put("/:name/availability", auth, doctorController.updateAvailability);
 doctorRoutes.get("/:name/stats", auth, doctorController.getStats);
+doctorRoutes.post("/predict-disease", auth, doctorController.predictDisease);
+
+import multer from 'multer';
+const upload = multer({ storage: multer.memoryStorage() });
+doctorRoutes.post("/analyze-image", auth, upload.single('image'), doctorController.analyzeImage);
 
 export default doctorRoutes;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Save, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import Button from '../ui/Button';
+import DatePicker from '../ui/DatePicker';
 import toast from 'react-hot-toast';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -161,20 +162,21 @@ const AvailabilityModal = ({ isOpen, onClose, initialAvailability, onSave, isLoa
                                     <div key={index} className="flex flex-col md:flex-row gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 relative group">
                                         <div className="flex-1 space-y-1">
                                             <label className="text-xs font-semibold text-slate-500 uppercase">From</label>
-                                            <input
-                                                type="date"
-                                                value={leave.startDate}
-                                                onChange={(e) => handleLeaveChange(index, 'startDate', e.target.value)}
-                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+                                            <DatePicker
+                                                selected={leave.startDate ? new Date(leave.startDate) : null}
+                                                onChange={(date) => handleLeaveChange(index, 'startDate', date ? date.toLocaleDateString('en-CA') : '')}
+                                                placeholder="Select start date"
+                                                className="w-full"
                                             />
                                         </div>
                                         <div className="flex-1 space-y-1">
                                             <label className="text-xs font-semibold text-slate-500 uppercase">To</label>
-                                            <input
-                                                type="date"
-                                                value={leave.endDate}
-                                                onChange={(e) => handleLeaveChange(index, 'endDate', e.target.value)}
-                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+                                            <DatePicker
+                                                selected={leave.endDate ? new Date(leave.endDate) : null}
+                                                onChange={(date) => handleLeaveChange(index, 'endDate', date ? date.toLocaleDateString('en-CA') : '')}
+                                                placeholder="Select end date"
+                                                className="w-full"
+                                                minDate={leave.startDate ? new Date(leave.startDate) : null}
                                             />
                                         </div>
                                         <div className="flex-[2] space-y-1">

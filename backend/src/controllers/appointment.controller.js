@@ -94,6 +94,37 @@ const createAppointment = async (req, res, next) => {
 
         const populatedAppointment = await Appointment.findById(appointment._id).populate('patient');
 
+        // Google Calendar Sync
+        if (doctorUserId) {
+            try {
+                // Dynamic import to avoid circular dependency
+                const { createGoogleCalendarEvent } = await import("../services/googleCalendarService.js");
+                const { Doctor } = await import("../models/doctor.model.js");
+
+                let targetDoctorId = doctorUserId;
+                const doctorDoc = await Doctor.findOne({
+                    $or: [
+                        { _id: mongoose.Types.ObjectId.isValid(doctorUserId) ? doctorUserId : null },
+                        { email: (await User.findById(doctorUserId))?.email },
+                        { name: primaryPhysician.replace(/^Dr\.\s+/i, '') }
+                    ]
+                });
+
+                if (doctorDoc) {
+                    targetDoctorId = doctorDoc._id;
+                    createGoogleCalendarEvent(targetDoctorId, {
+                        patientName: patient?.name || 'Unknown Patient',
+                        reason,
+                        schedule: new Date(schedule)
+                    }).catch(err => console.error("Google Sync Service Failed:", err));
+                }
+            } catch (syncError) {
+                console.error("[GoogleSync] Critical Error in controller block:", syncError);
+            }
+        }
+
+
+
         // Notify Admin
         if (req.io) {
             req.io.emit('new_appointment_request', populatedAppointment);

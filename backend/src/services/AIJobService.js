@@ -57,6 +57,44 @@ class AIJobService {
             throw error;
         }
     }
+
+    /**
+     * predictDiseaseML
+     * Calls the Custom ML Endpoint
+     */
+    async predictDiseaseML(symptoms) {
+        try {
+            console.log(`[AIJobService] Prediciting disease for symptoms: ${symptoms}`);
+            const response = await axios.post(`${this.aiServiceUrl}/predictions/disease-custom`, {
+                symptoms
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`[AIJobService] Prediction failed:`, error.message);
+            return { error: error.message }; // Return error object gracefully
+        }
+    }
+
+    /**
+     * analyzeImage
+     * Forwards a file to the Python AI service
+     */
+    async analyzeImage(formData) {
+        try {
+            console.log(`[AIJobService] Sending image to ${this.aiServiceUrl}/analyze-image`);
+            // Note: Content-Type header is handled automatically by Axios/FormData usually, 
+            // but we need to ensure headers from incoming request are passed or reconstructed
+            const response = await axios.post(`${this.aiServiceUrl}/analyze-image`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`[AIJobService] Image analysis failed:`, error.message);
+            throw error;
+        }
+    }
 }
 
 export const aiJobService = new AIJobService();
